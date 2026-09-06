@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股市交易模拟器 - 完整版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Microsoft YaHei", sans-serif; background: #fff; color: #333; padding: 10px; font-size: 13px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { border: 1px solid #999; padding: 10px; margin-bottom: 8px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+        .title { font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .title .menu-btn { font-size: 12px; padding: 2px 10px; border: 1px solid #999; background: #f0f0f0; cursor: pointer; border-radius: 3px; }
+        .title .menu-btn:hover { background: #ddd; }
+        .info-bar { font-size: 12px; color: #666; }
+        .stats-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+        .stat-card { border: 1px solid #ccc; padding: 6px 10px; min-width: 80px; text-align: center; }
+        .stat-label { font-size: 11px; color: #666; }
+        .stat-value { font-size: 14px; font-weight: bold; }
+        .green { color: #007000; }
+        .red { color: #c00; }
+        .blue { color: #006699; }
+        .purple { color: #800080; }
+        .speed-controls { display: flex; gap: 1px; flex-wrap: wrap; }
+        .speed-btn { padding: 5px 8px; border: 1px solid #999; background: #fff; cursor: pointer; font-size: 11px; }
+        .speed-btn:hover, .speed-btn.active { background: #333; color: #fff; }
+        .main-grid { display: grid; grid-template-columns: 38% 34% 28%; gap: 8px; }
+        .panel { border: 1px solid #999; padding: 8px; }
+        .panel-title { font-size: 13px; font-weight: bold; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #ccc; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { text-align: left; padding: 5px 4px; background: #f0f0f0; font-weight: bold; font-size: 11px; border-bottom: 1px solid #999; cursor: pointer; user-select: none; }
+        th:hover { background: #e0e0e0; }
+        td { padding: 5px 4px; border-bottom: 1px solid #ddd; }
+        .scroll-box { overflow-y: auto; max-height: 320px; }
+        .scroll-box::-webkit-scrollbar { width: 5px; }
+        .scroll-box::-webkit-scrollbar-thumb { background: #ccc; }
+        .btn { padding: 3px 8px; border: 1px solid #666; cursor: pointer; font-size: 11px; background: #f0f0f0; }
+        .btn-buy { background: #e8f5e8; color: #007000; }
+        .btn-sell { background: #f5e8e8; color: #c00; }
+        .btn-primary { background: #006699; color: #fff; border-color: #006699; }
+        .btn-success { background: #007000; color: #fff; border-color: #007000; }
+        .btn-danger { background: #c00; color: #fff; border-color: #c00; }
+        .btn-warning { background: #e68a00; color: #fff; border-color: #e68a00; }
+        .btn-sm { padding: 2px 8px; font-size: 11px; }
+        .btn-etf { background: #800080; color: #fff; border-color: #800080; }
+        .quick-btns { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+        .quick-btns .btn { flex: 1; min-width: 40px; text-align: center; background: #f0f0f0; border-color: #ccc; }
+        .quick-btns .btn:hover { background: #ddd; }
+        .news-item { padding: 6px; margin-bottom: 4px; font-size: 12px; border-left: 2px solid #999; }
+        .news-positive { border-left-color: #007000; }
+        .news-negative { border-left-color: #c00; }
+        .news-neutral { border-left-color: #999; }
+        .news-time { float: right; font-size: 11px; color: #666; }
+        .news-title { font-weight: bold; }
+        .news-content { color: #555; font-size: 11px; }
+        .rank-item { padding: 6px; margin-bottom: 3px; display: flex; justify-content: space-between; font-size: 12px; border: 1px solid #ddd; }
+        .rank-player { border: 1px solid #006699; }
+        .rank-num { display: inline-block; width: 18px; text-align: center; font-weight: bold; margin-right: 5px; }
+        .chart-box { height: 100px; border: 1px solid #ddd; margin-bottom: 6px; display: flex; align-items: flex-end; padding: 4px; gap: 1px; position: relative; overflow: hidden; }
+        .chart-box svg { width: 100%; height: 100%; display: block; }
+        .chart-box-asset { height: 60px; border: 1px solid #ddd; display: flex; align-items: flex-end; padding: 4px; gap: 1px; position: relative; overflow: hidden; }
+        .chart-box-asset svg { width: 100%; height: 100%; display: block; }
+        .stock-detail { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 6px; }
+        .detail-item { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 11px; }
+        .detail-label { color: #666; }
+        .detail-value { font-weight: bold; }
+        .market-info { display: flex; gap: 8px; padding: 6px; border: 1px solid #ddd; }
+        .info-item { flex: 1; text-align: center; font-size: 12px; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; place-items: center; z-index: 1000; }
+        .modal-content { background: #fff; border: 1px solid #666; padding: 15px; width: 520px; max-width: 95%; max-height: 90vh; overflow-y: auto; }
+        .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid #ccc; padding-bottom: 8px; }
+        .modal-close { float: right; cursor: pointer; font-size: 18px; font-weight: bold; color: #999; }
+        .modal-close:hover { color: #333; }
+        .modal-stock { font-size: 13px; font-weight: bold; margin-bottom: 12px; padding: 8px; border: 1px solid #ddd; }
+        .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .modal-box { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .modal-label { font-size: 11px; color: #666; }
+        .modal-value { font-size: 15px; font-weight: bold; }
+        .input-label { font-size: 12px; margin-bottom: 4px; display: block; }
+        .modal-input { width: 100%; padding: 6px; border: 1px solid #999; font-size: 13px; }
+        .checkbox-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 12px; }
+        .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; }
+        .summary-box { border: 1px solid #ddd; padding: 8px; margin: 12px 0; }
+        .summary-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+        .summary-total { border-top: 1px solid #ccc; margin-top: 4px; padding-top: 6px; font-weight: bold; }
+        .modal-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .modal-btn { flex: 1; padding: 7px; border: 1px solid #666; cursor: pointer; font-weight: bold; background: #f0f0f0; }
+        .btn-cancel { background: #f0f0f0; }
+        .btn-confirm-buy { background: #e8f5e8; color: #007000; }
+        .btn-confirm-sell { background: #f5e8e8; color: #c00; }
+        .trade-item { padding: 4px 0; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-size: 11px; }
+        .tag { display: inline-block; padding: 1px 4px; font-size: 10px; font-weight: bold; margin-left: 4px; border: 1px solid #ccc; }
+        .tag-limit-up { background: #ffd700; color: #333; border-color: #cc0; }
+        .tag-limit-down { background: #666; color: #fff; border-color: #444; }
+        .tag-short { background: #800080; color: #fff; border-color: #800080; }
+        .tag-etf { background: #006699; color: #fff; border-color: #006699; }
+        .tag-earnings { background: #ff8c00; color: #fff; border-color: #ff8c00; }
+        .ticker { border: 1px solid #999; padding: 6px; margin-bottom: 8px; overflow: hidden; }
+        .ticker-content { display: flex; animation: ticker 45s linear infinite; white-space: nowrap; }
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .ticker-item { padding: 0 15px; font-size: 12px; }
+        #startModal .modal-content { width: 480px; padding: 25px 30px; }
+        #startModal .modal-title { font-size: 20px; text-align: center; border-bottom: 2px solid #007000; padding-bottom: 12px; margin-bottom: 18px; }
+        #startModal .start-desc { font-size: 13px; color: #555; text-align: center; margin-bottom: 20px; line-height: 1.7; }
+        #startModal .start-range { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-top: 4px; }
+        #startModal .start-input-wrap { position: relative; }
+        #startModal .start-input { width: 100%; padding: 10px 12px; border: 2px solid #ccc; font-size: 18px; font-weight: bold; text-align: center; border-radius: 4px; transition: border-color 0.2s; }
+        #startModal .start-input:focus { border-color: #007000; outline: none; }
+        #startModal .start-btn { width: 100%; padding: 12px; background: #007000; color: #fff; border: none; font-size: 18px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 16px; transition: background 0.2s; }
+        #startModal .start-btn:hover { background: #005500; }
+        #startModal .start-presets { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+        #startModal .preset-btn { padding: 4px 12px; border: 1px solid #ccc; background: #f5f5f5; cursor: pointer; font-size: 12px; border-radius: 3px; transition: all 0.15s; }
+        #startModal .preset-btn:hover { background: #e0e0e0; border-color: #999; }
+        #startModal .preset-btn.active { background: #007000; color: #fff; border-color: #007000; }
+        #startModal .start-error { color: #c00; font-size: 12px; text-align: center; margin-top: 6px; min-height: 20px; }
+        .filter-bar { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; flex-wrap: wrap; }
+        .filter-bar input, .filter-bar select { padding: 3px 6px; border: 1px solid #ccc; font-size: 12px; border-radius: 3px; }
+        .filter-bar input { flex: 1; min-width: 100px; }
+        .filter-bar select { min-width: 80px; }
+        .achievement-item { padding: 6px 10px; margin-bottom: 4px; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; border-radius: 3px; }
+        .achievement-item.unlocked { background: #e8f5e8; border-color: #007000; }
+        .achievement-item.locked { background: #f5f5f5; color: #999; }
+        .achievement-badge { font-size: 18px; }
+        .achievement-name { font-weight: bold; }
+        .achievement-desc { font-size: 11px; color: #666; }
+        .save-item { padding: 6px 10px; border: 1px solid #ddd; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
+        .save-item .save-info { font-size: 12px; }
+        .save-item .save-actions button { margin-left: 4px; }
+        .file-input-wrapper { display: inline-block; position: relative; overflow: hidden; }
+        .file-input-wrapper input[type=file] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .liability-item { padding: 4px 6px; border-bottom: 1px solid #eee; font-size: 12px; }
+        .liability-short { color: #800080; }
+        .liability-margin { color: #cc5500; }
+        #sellableHint { display: none; font-size: 12px; color: #006699; margin-bottom: 4px; }
+        .earnings-tag { font-size: 10px; background: #ff8c00; color: #fff; padding: 1px 4px; border-radius: 2px; margin-left: 4px; }
+        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } #startModal .modal-content { width: 92%; padding: 18px; } .modal-content { width: 95%; } }
+    </style>
+</head>
+<body>
+    <!-- 完整页面结构 -->
+    <div class="container">
+        <div class="header">
+            <div class="header-top">
+                <div class="title">
+                    📈 股市交易模拟器 <span style="font-size:12px;color:#800080;font-weight:normal;">(财报系统)</span>
+                    <button class="menu-btn" onclick="openHomeModal()">🏠 主页</button>
+                    <button class="menu-btn" onclick="openSaveModal()">💾 存档</button>
+                </div>
+                <div class="info-bar">第 <span id="gameDay">1</span> 天 | 事件: <span id="eventCount">0</span></div>
+                <div class="speed-controls">
+                    <button class="speed-btn" onclick="setSpeed(0)">暂停</button>
+                    <button class="speed-btn active" onclick="setSpeed(1)">1x</button>
+                    <button class="speed-btn" onclick="setSpeed(2)">2x</button>
+                    <button class="speed-btn" onclick="setSpeed(5)">5x</button>
+                    <button class="speed-btn" onclick="setSpeed(10)">10x</button>
+                    <button class="speed-btn" onclick="setSpeed(20)">20x</button>
+                </div>
+            </div>
+            <div class="stats-bar">
+                <div class="stat-card"><div class="stat-label">总资产</div><div class="stat-value green" id="totalAssets">1,000,000</div></div>
+                <div class="stat-card"><div class="stat-label">现金</div><div class="stat-value blue" id="cash">1,000,000</div></div>
+                <div class="stat-card"><div class="stat-label">持仓市值</div><div class="stat-value" id="portfolioValue">0</div></div>
+                <div class="stat-card"><div class="stat-label">负债</div><div class="stat-value red" id="liabilityValue">0</div></div>
+                <div class="stat-card"><div class="stat-label">维持担保比</div><div class="stat-value" id="marginRatio">--%</div></div>
+                <div class="stat-card"><div class="stat-label">交易</div><div class="stat-value" id="tradeCount">0</div></div>
+            </div>
+        </div>
+        <div class="ticker"><div class="ticker-content" id="tickerTape"></div></div>
+        <div class="main-grid">
+            <div>
+                <div class="panel" style="margin-bottom:8px;">
+                    <div class="panel-title">股票 & ETF 列表 <span style="font-weight:normal;font-size:11px;color:#888;">(股票80只 + ETF 5只)</span></div>
+                    <div class="filter-bar">
+                        <input type="text" id="stockSearch" placeholder="🔍 搜索名称/代码..." oninput="updateStockList()">
+                        <select id="stockSort" onchange="updateStockList()">
+                            <option value="code">默认</option>
+                            <option value="change">涨跌幅 ↓</option>
+                            <option value="change_asc">涨跌幅 ↑</option>
+                            <option value="price">价格 ↓</option>
+                            <option value="price_asc">价格 ↑</option>
+                            <option value="pe">市盈率 ↓</option>
+                            <option value="pe_asc">市盈率 ↑</option>
+                        </select>
+                    </div>
+                    <div class="scroll-box" style="max-height:300px;">
+                        <table><thead><tr><th>代码</th><th>名称</th><th style="text-align:right">价格</th><th style="text-align:right">涨跌</th><th style="text-align:center">PE</th><th style="text-align:center">操作</th></tr></thead>
+                        <tbody id="stockList"></tbody></table>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-title">我的持仓（<span id="stockCount">0</span>只）</div>
+                    <div class="scroll-box" style="max-height:200px;">
+                        <table><thead><tr><th>股票/ETF</th><th style="text-align:right">数量</th><th style="text-align:right">可卖</th><th style="text-align:right">成本</th><th style="text-align:right">盈亏</th><th style="text-align:center">操作</th></tr></thead>
+                        <tbody id="portfolioList"><tr><td colspan="6" style="text-align:center;color:#666;padding:25px;">暂无持仓</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="panel" style="margin-bottom:8px;">
+                    <div class="panel-title" id="chartTitle">📊 走势图</div>
+                    <div class="chart-box" id="chartBox"></div>
+                    <div class="stock-detail" id="stockDetail" style="display:none;">
+                        <div class="detail-item"><div class="detail-label">今开</div><div class="detail-value" id="detailOpen">-</div></div>
+                        <div class="detail-item"><div class="detail-label">最高</div><div class="detail-value" id="detailHigh">-</div></div>
+                        <div class="detail-item"><div class="detail-label">最低</div><div class="detail-value" id="detailLow">-</div></div>
+                        <div class="detail-item"><div class="detail-label">类型</div><div class="detail-value" id="detailType">-</div></div>
+                    </div>
+                    <div style="margin-top:6px;border-top:1px solid #eee;padding-top:6px;">
+                        <div style="font-size:12px;font-weight:bold;margin-bottom:3px;">💰 总资产走势</div>
+                        <div class="chart-box-asset" id="assetChartBox"></div>
+                    </div>
+                    <div class="market-info" style="margin-top:6px;">
+                        <div class="info-item"><div>上涨</div><div class="green" id="upCount">0</div></div>
+                        <div class="info-item"><div>下跌</div><div class="red" id="downCount">0</div></div>
+                        <div class="info-item"><div>情绪</div><div id="sentimentText">中性</div></div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-title">📰 新闻事件</div>
+                    <div class="scroll-box" id="newsList" style="max-height:280px;"></div>
+                </div>
+                <div class="panel" style="margin-top:8px;">
+                    <div class="panel-title">📊 财报发布</div>
+                    <div class="scroll-box" id="earningsList" style="max-height:120px;">
+                        <div style="text-align:center;color:#666;padding:10px;">暂无财报</div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="panel" style="margin-bottom:8px;"><div class="panel-title">🏆 排行榜</div><div class="scroll-box" id="leaderboard" style="max-height:290px;"></div></div>
+                <div class="panel" style="margin-bottom:8px;"><div class="panel-title">🔥 龙虎榜</div><div id="dragonList" class="scroll-box" style="max-height:110px;"></div></div>
+                <div class="panel"><div class="panel-title">📋 交易记录</div><div class="scroll-box" id="tradeHistory" style="max-height:170px;"><div style="text-align:center;color:#666;padding:18px;">暂无</div></div></div>
+                <div class="panel" style="margin-top:8px;"><div class="panel-title">🔴 负债明细</div><div id="liabilityList" class="scroll-box" style="max-height:120px;"><div style="text-align:center;color:#666;padding:10px;">暂无负债</div></div></div>
+                <div class="panel" style="margin-top:8px;"><div class="panel-title">📦 ETF 持仓</div><div id="etfHoldings" class="scroll-box" style="max-height:120px;"><div style="text-align:center;color:#666;padding:10px;">暂无ETF持仓</div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交易模态框 -->
+    <div class="modal" id="tradeModal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">交易</div>
+            <div class="modal-stock" id="modalStockName"></div>
+            <div class="modal-row">
+                <div class="modal-box"><div class="modal-label">价格</div><div class="modal-value" id="modalPrice"></div></div>
+                <div class="modal-box"><div class="modal-label">手续费</div><div class="modal-value">0.25%</div></div>
+            </div>
+            <div id="sellableHint" style="display:none;font-size:12px;color:#006699;margin-bottom:4px;">可卖: <span id="sellableCount">0</span> 股</div>
+            <div class="checkbox-row">
+                <input type="checkbox" id="tradeMarginCheck" onchange="calculateTrade()">
+                <label for="tradeMarginCheck" id="tradeMarginLabel">启用融资/融券</label>
+            </div>
+            <label class="input-label">数量（100股整数倍）</label>
+            <input type="number" class="modal-input" id="tradeQuantity" min="100" step="100" value="100" oninput="calculateTrade()">
+            <div class="quick-btns">
+                <button class="btn btn-sm" onclick="setTradeFraction(1)">ALL</button>
+                <button class="btn btn-sm" onclick="setTradeFraction(0.5)">1/2</button>
+                <button class="btn btn-sm" onclick="setTradeFraction(0.25)">1/4</button>
+                <button class="btn btn-sm" onclick="setTradeFraction(0.125)">1/8</button>
+            </div>
+            <div class="summary-box">
+                <div class="summary-row"><span>金额</span><span id="sumAmount">0</span></div>
+                <div class="summary-row"><span>手续费</span><span id="sumFee">0</span></div>
+                <div class="summary-row summary-total"><span>总计</span><span id="sumTotal">0</span></div>
+                <div class="summary-row" id="marginSummary" style="display:none;color:#800080;"><span>保证金（预估）</span><span id="sumMargin">0</span></div>
+                <div class="summary-row" id="financeHint" style="display:none;color:#006699;font-weight:bold;"><span>💳 融资买入</span><span id="financeAmount">0</span></div>
+                <div class="summary-row" id="cashSufficientHint" style="display:none;color:#888;"><span>✅ 现金充足，无需融资</span><span></span></div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-cancel" onclick="closeModal()">取消</button>
+                <button class="modal-btn" id="confirmBtn" onclick="executeTrade()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ETF申购/赎回模态框 -->
+    <div class="modal" id="etfModal">
+        <div class="modal-content">
+            <div class="modal-title" id="etfModalTitle">ETF 操作</div>
+            <div class="modal-stock" id="etfModalName"></div>
+            <div class="modal-row">
+                <div class="modal-box"><div class="modal-label">净值</div><div class="modal-value" id="etfNav"></div></div>
+                <div class="modal-box"><div class="modal-label">现价</div><div class="modal-value" id="etfPrice"></div></div>
+            </div>
+            <div class="checkbox-row">
+                <input type="checkbox" id="etfActionRedeem" onchange="toggleEtfAction()">
+                <label for="etfActionRedeem">赎回（ETF份额换股票）</label>
+            </div>
+            <label class="input-label">ETF份额数量（份）</label>
+            <input type="number" class="modal-input" id="etfQuantity" min="1" step="1" value="1" oninput="calculateEtfTrade()">
+            <div class="quick-btns">
+                <button class="btn btn-sm" onclick="setEtfFraction(1)">ALL</button>
+                <button class="btn btn-sm" onclick="setEtfFraction(0.5)">1/2</button>
+                <button class="btn btn-sm" onclick="setEtfFraction(0.25)">1/4</button>
+                <button class="btn btn-sm" onclick="setEtfFraction(0.125)">1/8</button>
+            </div>
+            <div class="summary-box">
+                <div class="summary-row"><span>所需/得到 成分股</span><span id="etfComponentsSummary">-</span></div>
+                <div class="summary-row summary-total"><span>预估净值总额</span><span id="etfTotalNav">0</span></div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-cancel" onclick="closeEtfModal()">取消</button>
+                <button class="modal-btn btn-success" id="etfConfirmBtn" onclick="executeEtfTrade()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 启动模态框 -->
+    <div class="modal" id="startModal" style="display:grid;">
+        <div class="modal-content">
+            <div class="modal-title">🚀 股市交易模拟器</div>
+            <div class="start-desc">欢迎来到股市交易模拟器（ETF与融资融券版）！<br>请输入您的初始资金，开始您的投资之旅。</div>
+            <label class="input-label" style="font-weight:bold;">初始资金（元）</label>
+            <div class="start-input-wrap"><input type="text" class="start-input" id="startCashInput" value="1,000,000" oninput="formatStartCash(this)"></div>
+            <div class="start-range"><span>¥100,000</span><span>¥100,000,000</span></div>
+            <div class="start-presets">
+                <button class="preset-btn" data-val="100000">10万</button>
+                <button class="preset-btn" data-val="500000">50万</button>
+                <button class="preset-btn active" data-val="1000000">100万</button>
+                <button class="preset-btn" data-val="5000000">500万</button>
+                <button class="preset-btn" data-val="10000000">1000万</button>
+                <button class="preset-btn" data-val="50000000">5000万</button>
+                <button class="preset-btn" data-val="100000000">1亿</button>
+            </div>
+            <div class="start-error" id="startError"></div>
+            <button class="start-btn" onclick="startGame()">开始交易</button>
+        </div>
+    </div>
+
+    <!-- 主页模态框 -->
+    <div class="modal" id="homeModal">
+        <div class="modal-content" style="width:600px;">
+            <span class="modal-close" onclick="closeHomeModal()">&times;</span>
+            <div class="modal-title">🏠 主页</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div style="border:1px solid #ddd;padding:10px;border-radius:4px;">
+                    <div style="font-weight:bold;font-size:14px;">📊 总览</div>
+                    <div style="margin-top:8px;">
+                        <div>总资产: <span id="homeTotalAssets" class="green">-</span></div>
+                        <div>收益率: <span id="homeProfitRate">-</span></div>
+                        <div>交易次数: <span id="homeTradeCount">-</span></div>
+                        <div>持仓数: <span id="homeStockCount">-</span></div>
+                        <div>游戏天数: <span id="homeGameDay">-</span></div>
+                        <div>负债总额: <span id="homeLiability" class="red">-</span></div>
+                        <div>维持担保比: <span id="homeMarginRatio">-</span></div>
+                    </div>
+                </div>
+                <div style="border:1px solid #ddd;padding:10px;border-radius:4px;">
+                    <div style="font-weight:bold;font-size:14px;">🏅 成就 (<span id="achieveCount">0</span>/<span id="achieveTotal">35</span>)</div>
+                    <div id="achievementList" style="max-height:200px;overflow-y:auto;margin-top:6px;"></div>
+                </div>
+                <div style="border:1px solid #ddd;padding:10px;border-radius:4px;grid-column:1/3;">
+                    <div style="font-weight:bold;font-size:14px;">📈 收益率曲线</div>
+                    <div id="homeReturnChart" style="height:80px;border:1px solid #eee;display:flex;align-items:flex-end;padding:4px;gap:1px;margin-top:4px;position:relative;overflow:hidden;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 存档模态框 -->
+    <div class="modal" id="saveModal">
+        <div class="modal-content" style="width:550px;">
+            <span class="modal-close" onclick="closeSaveModal()">&times;</span>
+            <div class="modal-title">💾 存档管理</div>
+            <div style="margin-bottom:12px;">
+                <label class="input-label">存档名称</label>
+                <div style="display:flex;gap:6px;">
+                    <input type="text" id="saveNameInput" class="modal-input" placeholder="输入存档名称..." value="存档1">
+                    <button class="btn btn-success" style="padding:6px 16px;" onclick="saveGame()">保存</button>
+                </div>
+            </div>
+            <div style="border-top:1px solid #ccc;padding-top:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <span style="font-weight:bold;">已有存档</span>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-warning" onclick="exportAllSaves()">📤 导出全部</button>
+                        <span class="file-input-wrapper">
+                            <button class="btn btn-primary">📥 导入存档</button>
+                            <input type="file" accept=".json" onchange="importSave(event)">
+                        </span>
+                    </div>
+                </div>
+                <div id="saveList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ======================================================================
+        // 1. 全局配置
+        // ======================================================================
+        const CONFIG = {
+            initialCash: 1000000,
+            feeRate: 0.0025,
+            tickInterval: 700,
+            newsInterval: 1800,
+            limitUp: 0.10,
+            limitDown: -0.10,
+            volatilityMultiplier: 1.5,
+            marginRate: 0.5,
+            interestRate: 0.08,
+            maintenanceMargin: 1.30,
+            earningsInterval: 5,
+            earningsCount: 3,
+            peMean: 25,
+            peStd: 10,
+            regressionStrength: 0.01,
+        };
+
+        // ======================================================================
+        // 2. 行业 & ETF 定义
+        // ======================================================================
+        const SECTORS = [
+            '科技', '金融', '医疗', '能源', '消费', '地产', '汽车', '航空',
+            '农业', '教育', '传媒', '化工', '基建', '零售', '军工', '通信',
+            '电子', '机械', '食品', '饮料', '医药', '保险', '证券', '银行',
+            '物流', '旅游', '环保', '半导体', '软件', '互联网', '游戏', '影视',
+            '家电', '家具', '服装', '珠宝', '酿酒', '养殖', '矿业', '钢铁'
+        ];
+
+        const ETF_DEFS = [
+            { code: 'ETF01', name: '科技ETF', sector: '科技', components: ['科技A','科技B','半导体A','半导体B','软件A'], weights: [0.25,0.20,0.20,0.15,0.20] },
+            { code: 'ETF02', name: '金融ETF', sector: '金融', components: ['金融A','金融B','银行A','银行B','证券A'], weights: [0.30,0.20,0.20,0.15,0.15] },
+            { code: 'ETF03', name: '医药ETF', sector: '医疗', components: ['医疗A','医疗B','医药A','医药B','生物A'], weights: [0.25,0.25,0.20,0.15,0.15] },
+            { code: 'ETF04', name: '消费ETF', sector: '消费', components: ['消费A','消费B','食品A','饮料A','零售A'], weights: [0.30,0.20,0.20,0.15,0.15] },
+            { code: 'ETF05', name: '能源ETF', sector: '能源', components: ['能源A','能源B','煤炭A','石油A','电力A'], weights: [0.25,0.25,0.20,0.15,0.15] }
+        ];
+
+        const AI_PLAYERS = [
+            { name: '巴菲特', style: '价值投资', riskLevel: 0.35 },
+            { name: '索罗斯', style: '激进投机', riskLevel: 0.85 },
+            { name: '西蒙斯', style: '量化交易', riskLevel: 0.55 },
+            { name: '彼得林奇', style: '稳健成长', riskLevel: 0.45 },
+            { name: '利弗莫尔', style: '短线作手', riskLevel: 0.8 },
+            { name: '费雪', style: '成长投资', riskLevel: 0.6 },
+            { name: '格雷厄姆', style: '烟蒂投资', riskLevel: 0.3 },
+            { name: '达利欧', style: '全天候', riskLevel: 0.4 }
+        ];
+
+        // ======================================================================
+        // 3. 新闻模板 & 成就定义
+        // ======================================================================
+        const NEWS_TEMPLATES = [
+            { type: 'positive', sectors: ['科技','半导体','软件','互联网'], title: '芯片技术突破', content: '国产芯片技术取得重大突破，性能提升50%。', impact: 0.10 },
+            { type: 'positive', sectors: ['科技','互联网'], title: 'AI大模型发布', content: '新一代AI大模型正式发布，引爆行业热潮。', impact: 0.11 },
+            { type: 'negative', sectors: ['科技','半导体'], title: '技术限制升级', content: '高端技术出口管制全面升级。', impact: -0.09 },
+            { type: 'positive', sectors: ['软件','互联网'], title: '云计算爆发', content: '云计算市场规模同比增长45%。', impact: 0.08 },
+            { type: 'negative', sectors: ['互联网'], title: '数据安全新规', content: '数据安全新规出台，行业短期承压。', impact: -0.07 },
+            { type: 'positive', sectors: ['金融','证券','银行','保险'], title: '降准落地', content: '央行全面降准0.5%，释放万亿流动性。', impact: 0.07 },
+            { type: 'positive', sectors: ['金融','证券'], title: '券商合并', content: '头部券商合并重组，打造航母级券商。', impact: 0.09 },
+            { type: 'negative', sectors: ['金融','银行'], title: '不良资产上升', content: '银行不良贷款率小幅上升。', impact: -0.06 },
+            { type: 'positive', sectors: ['保险'], title: '保费增长', content: '保险行业保费收入同比增长18%。', impact: 0.06 },
+            { type: 'positive', sectors: ['医疗','医药'], title: '新药研发成功', content: '国产创新药临床试验成功，即将上市。', impact: 0.10 },
+            { type: 'negative', sectors: ['医疗','医药'], title: '药品集采降价', content: '药品集采平均降价60%，行业利润承压。', impact: -0.09 },
+            { type: 'positive', sectors: ['医疗'], title: '医疗器械国产替代', content: '高端医疗器械国产化加速。', impact: 0.08 },
+            { type: 'positive', sectors: ['医药'], title: '疫苗突破', content: '新型疫苗研发取得重大进展。', impact: 0.09 },
+            { type: 'positive', sectors: ['能源','石油','煤炭'], title: '油价上涨', content: '国际油价大幅上涨，能源板块受益。', impact: 0.09 },
+            { type: 'negative', sectors: ['能源','石油'], title: '油价暴跌', content: '国际原油价格大幅下跌。', impact: -0.08 },
+            { type: 'positive', sectors: ['新能源','电力'], title: '绿电政策利好', content: '新能源发电补贴政策延续。', impact: 0.07 },
+            { type: 'negative', sectors: ['煤炭'], title: '煤价下行', content: '煤炭价格持续走低。', impact: -0.07 },
+            { type: 'positive', sectors: ['*'], title: '外资大幅流入', content: '北向资金单日净流入超200亿元。', impact: 0.05 },
+            { type: 'negative', sectors: ['*'], title: '外围市场暴跌', content: '美股大幅下跌，全球市场恐慌。', impact: -0.06 },
+            { type: 'neutral', sectors: ['*'], title: 'GDP数据公布', content: 'GDP同比增长5.2%，符合预期。', impact: 0.01 },
+        ];
+
+        const ACHIEVEMENTS = [
+            { id: 'first_trade', name: '初试牛刀', desc: '完成第一次交易', check: g => g.tradeCount >= 1 },
+            { id: 'hold_5', name: '分散投资', desc: '同时持有5只股票', check: g => Object.keys(g.portfolio).length >= 5 },
+            { id: 'hold_10', name: '组合大师', desc: '同时持有10只股票', check: g => Object.keys(g.portfolio).length >= 10 },
+            { id: 'profit_20', name: '稳健收益', desc: '收益率达到20%', check: g => getProfitRate(g) >= 20 },
+            { id: 'profit_50', name: '盈利专家', desc: '收益率达到50%', check: g => getProfitRate(g) >= 50 },
+            { id: 'profit_100', name: '翻倍高手', desc: '收益率达到100%', check: g => getProfitRate(g) >= 100 },
+            { id: 'trade_10', name: '交易新手', desc: '交易次数达到10次', check: g => g.tradeCount >= 10 },
+            { id: 'trade_50', name: '交易达人', desc: '交易次数达到50次', check: g => g.tradeCount >= 50 },
+            { id: 'trade_100', name: '交易大师', desc: '交易次数达到100次', check: g => g.tradeCount >= 100 },
+            { id: 'day_5', name: '坚持一周', desc: '游戏进行到第5天', check: g => g.day >= 5 },
+            { id: 'day_20', name: '月度投资者', desc: '游戏进行到第20天', check: g => g.day >= 20 },
+            { id: 'day_50', name: '长期持有', desc: '游戏进行到第50天', check: g => g.day >= 50 },
+            { id: 'asset_2m', name: '百万富翁', desc: '总资产达到200万', check: g => getTotalAssets(g) >= 2000000 },
+            { id: 'asset_5m', name: '五百万俱乐部', desc: '总资产达到500万', check: g => getTotalAssets(g) >= 5000000 },
+            { id: 'asset_10m', name: '千万富翁', desc: '总资产达到1000万', check: g => getTotalAssets(g) >= 10000000 },
+            { id: 'asset_50m', name: '亿万富豪', desc: '总资产达到5000万', check: g => getTotalAssets(g) >= 50000000 },
+            { id: 'first_short', name: '初次做空', desc: '完成第一次融券卖出', check: g => g.shortCount >= 1 },
+            { id: 'margin_use', name: '杠杆玩家', desc: '使用融资买入', check: g => g.marginTradeCount >= 1 },
+            { id: 'etf_create', name: 'ETF创作者', desc: '完成一次ETF申购', check: g => g.etfCreateCount >= 1 },
+            { id: 'etf_redeem', name: 'ETF赎回者', desc: '完成一次ETF赎回', check: g => g.etfRedeemCount >= 1 },
+            { id: 'short_5', name: '做空先锋', desc: '累计融券卖出5次', check: g => g.shortCount >= 5 },
+            { id: 'short_10', name: '空头大师', desc: '累计融券卖出10次', check: g => g.shortCount >= 10 },
+            { id: 'margin_5', name: '融资达人', desc: '累计融资买入5次', check: g => g.marginTradeCount >= 5 },
+            { id: 'margin_10', name: '杠杆高手', desc: '累计融资买入10次', check: g => g.marginTradeCount >= 10 },
+            { id: 'liability_1m', name: '负债百万', desc: '融资负债超过100万', check: g => (g.marginLoan && g.marginLoan.amount >= 1000000) || false },
+            { id: 'etf_hold_3', name: 'ETF收藏家', desc: '同时持有3只不同的ETF', check: g => Object.keys(g.etfPositions).length >= 3 },
+            { id: 'etf_hold_5', name: 'ETF全垒打', desc: '同时持有全部5只ETF', check: g => Object.keys(g.etfPositions).length >= 5 },
+            { id: 'etf_value_1m', name: 'ETF大户', desc: 'ETF持仓市值超过100万', check: g => { let val=0; Object.entries(g.etfPositions).forEach(([code,shares])=>{const etf=g.etfs.find(e=>e.code===code); if(etf) val+=shares*etf.price;}); return val>=1000000; } },
+            { id: 'margin_ratio_200', name: '安全边际', desc: '维持担保比例达到200%', check: g => getMarginRatio(g) >= 2.0 },
+            { id: 'margin_ratio_300', name: '极度安全', desc: '维持担保比例达到300%', check: g => getMarginRatio(g) >= 3.0 },
+            { id: 'force_close', name: '经历爆仓', desc: '被强制平仓一次', check: g => g.forceCloseCount >= 1 },
+            { id: 'interest_paid_10k', name: '利息贡献', desc: '累计支付利息超过1万元', check: g => (g.totalInterestPaid || 0) >= 10000 },
+            { id: 'day_100', name: '百天纪念', desc: '游戏进行到第100天', check: g => g.day >= 100 },
+            { id: 'asset_100m', name: '十亿俱乐部', desc: '总资产达到1亿', check: g => getTotalAssets(g) >= 100000000 },
+        ];
+
+        // ======================================================================
+        // 4. 辅助函数（全局）
+        // ======================================================================
+        function getTotalAssets(g) {
+            let pv = 0;
+            Object.entries(g.portfolio).forEach(([c, entry]) => {
+                const totalShares = entry.batches.reduce((sum, b) => sum + b.shares, 0);
+                const st = g.stocks.find(x => x.code === c);
+                if (st) pv += totalShares * st.price;
+            });
+            Object.entries(g.etfPositions || {}).forEach(([code, shares]) => {
+                const etf = g.etfs.find(e => e.code === code);
+                if (etf) pv += shares * etf.price;
+            });
+            return g.cash + pv;
+        }
+
+        function getTotalLiability(g) {
+            let total = 0;
+            if (g.marginLoan) total += g.marginLoan.amount;
+            if (g.shortPositions) {
+                Object.values(g.shortPositions).forEach(s => {
+                    const st = g.stocks.find(x => x.code === s.code);
+                    if (st) total += s.shares * st.price;
+                });
+            }
+            return total;
+        }
+
+        function getMarginRatio(g) {
+            const total = getTotalAssets(g);
+            const liability = getTotalLiability(g);
+            if (liability === 0) return Infinity;
+            return total / liability;
+        }
+
+        function getProfitRate(g) {
+            const init = CONFIG.initialCash;
+            const total = getTotalAssets(g);
+            return ((total - init) / init) * 100;
+        }
+
+        // ======================================================================
+        // 5. 游戏全局状态 GameState
+        // ======================================================================
+        let Game = {
+            day: 1,
+            speed: 1,
+            paused: false,
+            cash: CONFIG.initialCash,
+            portfolio: {},        // 股票持仓 { code: { batches: [{shares, costBasis, buyDay}] } }
+            etfPositions: {},      // ETF持仓 { code: shares }
+            stocks: [],            // 股票数组
+            etfs: [],              // ETF数组
+            aiPlayers: [],         // AI玩家
+            news: [],              // 新闻列表
+            trades: [],            // 交易记录
+            tradeCount: 0,
+            shortCount: 0,
+            marginTradeCount: 0,
+            etfCreateCount: 0,
+            etfRedeemCount: 0,
+            forceCloseCount: 0,
+            totalInterestPaid: 0,
+            eventCount: 0,
+            selectedStock: null,
+            tradeMode: null,
+            gameLoop: null,
+            newsLoop: null,
+            earningsLoop: null,
+            player: null,
+            marketSentiment: 50,
+            assetHistory: [],
+            achievements: {},
+            marginLoan: null,      // { amount, interestAccrued, startDay }
+            shortPositions: {},    // { code: { shares, costBasis, startDay, marginDeposit, interestAccrued } }
+            earningsHistory: [],
+            nextEarningsDay: CONFIG.earningsInterval,
+        };
+
+        // ======================================================================
+        // 6. 生成股票与ETF
+        // ======================================================================
+        function generateStocks() {
+            const stocks = [];
+            let codeCounter = 1;
+            SECTORS.forEach(sector => {
+                for (let suffix of ['A','B']) {
+                    const code = String(codeCounter++).padStart(3, '0');
+                    const name = sector + suffix;
+                    const basePrice = 20 + Math.floor(Math.random() * 180);
+                    const volatility = 0.018 + Math.random() * 0.042;
+                    const beta = 0.5 + Math.random() * 1.5;
+                    const eps = 0.5 + Math.random() * 5;
+                    const pe = 15 + Math.random() * 35;
+                    const industryPosition = ['龙头', '一般', '落后'][Math.floor(Math.random() * 3)];
+                    stocks.push({
+                        code, name, sector, basePrice, volatility, beta,
+                        price: basePrice, openPrice: basePrice, highPrice: basePrice, lowPrice: basePrice,
+                        changePercent: 0, priceHistory: Array(40).fill(basePrice),
+                        trend: (Math.random()-0.5)*0.007, momentum: 0, newsImpact: 0,
+                        limitUp: false, limitDown: false, isETF: false,
+                        eps, pe, industryPosition,
+                        lastEps: eps, expectedEps: eps, earningsDate: 0,
+                        fairPrice: eps * pe,
+                    });
+                }
+            });
+            for (let i = stocks.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [stocks[i], stocks[j]] = [stocks[j], stocks[i]];
+            }
+            return stocks;
+        }
+
+        function generateETFs(stocks) {
+            const etfs = [];
+            ETF_DEFS.forEach(def => {
+                const comps = [];
+                const weights = [];
+                def.components.forEach(name => {
+                    const st = stocks.find(s => s.name === name);
+                    if (st) { comps.push(st); }
+                });
+                if (comps.length === 0) { console.warn('ETF成分股未找到:', def.name); return; }
+                const totalWeight = def.weights.slice(0, comps.length).reduce((a,b) => a+b, 0);
+                const adjustedWeights = def.weights.slice(0, comps.length).map(w => w / totalWeight);
+                let initPrice = 0;
+                comps.forEach((st, idx) => { initPrice += st.price * adjustedWeights[idx]; });
+                etfs.push({
+                    code: def.code, name: def.name, sector: def.sector,
+                    components: comps, weights: adjustedWeights,
+                    price: initPrice, openPrice: initPrice, highPrice: initPrice, lowPrice: initPrice,
+                    changePercent: 0, priceHistory: Array(40).fill(initPrice),
+                    nav: initPrice, totalShares: 1000000,
+                    isETF: true, limitUp: false, limitDown: false,
+                    momentum: 0, newsImpact: 0,
+                });
+            });
+            return etfs;
+        }
+
+        // ======================================================================
+        // 7. DOM 辅助函数
+        // ======================================================================
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        }
+
+        function setHTML(id, html) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        }
+
+        // ======================================================================
+        // 8. 核心业务函数（财报、估值回归、自动还债、爆仓、交易等）
+        // ======================================================================
+        function repayDebt() {
+            if (!Game.marginLoan || Game.marginLoan.amount <= 0) return;
+            if (Game.cash <= 0) return;
+            const repayAmount = Math.min(Game.cash, Game.marginLoan.amount);
+            Game.cash -= repayAmount;
+            Game.marginLoan.amount -= repayAmount;
+            if (Game.marginLoan.amount < 0.01) Game.marginLoan = null;
+            addTrade(`💳 自动还债 ${repayAmount.toFixed(2)}`, 'system');
+        }
+
+        function generateEarningsReport() {
+            const shuffled = [...Game.stocks].sort(() => Math.random() - 0.5);
+            const selected = shuffled.slice(0, CONFIG.earningsCount);
+            let reports = [];
+            selected.forEach(stock => {
+                const epsChange = (Math.random() - 0.5) * 0.4;
+                const expected = stock.eps * (1 + epsChange);
+                const surprise = (Math.random() - 0.5) * 0.5;
+                const actual = expected * (1 + surprise);
+                const surprisePercent = ((actual - expected) / expected) * 100;
+                const isBeat = actual > expected;
+                stock.lastEps = stock.eps;
+                stock.eps = actual;
+                stock.expectedEps = expected;
+                stock.earningsDate = Game.day;
+                const newPe = stock.pe * (1 + surprise / 100);
+                stock.pe = Math.max(5, newPe);
+                stock.fairPrice = stock.eps * stock.pe;
+                let priceJump = 0;
+                let reportType = '';
+                let reportDesc = '';
+                if (isBeat) {
+                    const jumpPercent = 0.05 + Math.random() * 0.05;
+                    priceJump = stock.price * (1 + jumpPercent);
+                    reportType = '超预期';
+                    reportDesc = `利润大增 ${surprisePercent.toFixed(1)}%`;
+                    addNews({ type: 'positive', title: `📈 ${stock.name} 财报超预期`, content: `${stock.name} 财报超预期，利润增长 ${surprisePercent.toFixed(1)}%，股价跳空高开。`, impact: 0.08 });
+                } else {
+                    priceJump = stock.price * (1 - CONFIG.limitDown);
+                    reportType = '不及预期';
+                    reportDesc = `利润下降 ${(-surprisePercent).toFixed(1)}%`;
+                    addNews({ type: 'negative', title: `📉 ${stock.name} 财报暴雷`, content: `${stock.name} 财报不及预期，利润下降 ${(-surprisePercent).toFixed(1)}%，股价一字跌停。`, impact: -0.10 });
+                }
+                stock.price = Math.min(Math.max(priceJump, stock.price * (1 - CONFIG.limitDown)), stock.price * (1 + CONFIG.limitUp));
+                stock.openPrice = stock.price;
+                stock.highPrice = Math.max(stock.highPrice, stock.price);
+                stock.lowPrice = Math.min(stock.lowPrice, stock.price);
+                reports.push({
+                    code: stock.code,
+                    name: stock.name,
+                    type: reportType,
+                    desc: reportDesc,
+                    day: Game.day,
+                    eps: stock.eps,
+                    pe: stock.pe,
+                });
+                if (!isBeat) {
+                    stock.limitDown = true;
+                    stock.limitUp = false;
+                } else {
+                    stock.limitUp = false;
+                    stock.limitDown = false;
+                }
+                stock.changePercent = ((stock.price - stock.openPrice) / stock.openPrice) * 100;
+            });
+            updateEarningsUI(reports);
+        }
+
+        function updateEarningsUI(reports) {
+            const container = document.getElementById('earningsList');
+            if (!container) return;
+            let html = '';
+            reports.forEach(r => {
+                const cls = r.type === '超预期' ? 'green' : 'red';
+                html += `<div class="trade-item"><span class="${cls}">${r.name}</span> ${r.type} (${r.desc}) 第${r.day}天</div>`;
+            });
+            container.innerHTML = html + container.innerHTML;
+            if (container.children.length > 20) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        function applyValuationRegression(stock) {
+            const targetPE = CONFIG.peMean;
+            const fairPrice = stock.eps * targetPE;
+            stock.fairPrice = fairPrice;
+            const currentPE = stock.price / stock.eps;
+            if (currentPE > targetPE * 1.2) {
+                const pressure = (currentPE - targetPE) / targetPE;
+                stock.trend -= pressure * CONFIG.regressionStrength * 0.5;
+            } else if (currentPE < targetPE * 0.8) {
+                const pressure = (targetPE - currentPE) / targetPE;
+                stock.trend += pressure * CONFIG.regressionStrength * 0.5;
+            }
+            const priceDiff = (fairPrice - stock.price) / stock.price;
+            if (Math.abs(priceDiff) > 0.05) {
+                stock.trend += priceDiff * CONFIG.regressionStrength * 0.3;
+            }
+        }
+
+        function updateETFPrice(etf) {
+            let weightedChange = 0;
+            etf.components.forEach((st, idx) => { weightedChange += st.changePercent * etf.weights[idx]; });
+            const newPrice = etf.price * (1 + weightedChange / 100);
+            const limitUpPrice = etf.openPrice * (1 + CONFIG.limitUp);
+            const limitDownPrice = etf.openPrice * (1 + CONFIG.limitDown);
+            if (newPrice >= limitUpPrice) { etf.price = limitUpPrice; etf.limitUp = true; etf.limitDown = false; }
+            else if (newPrice <= limitDownPrice) { etf.price = limitDownPrice; etf.limitDown = true; etf.limitUp = false; }
+            else { etf.price = newPrice; etf.limitUp = false; etf.limitDown = false; }
+            etf.nav = etf.price;
+            etf.highPrice = Math.max(etf.highPrice, etf.price);
+            etf.lowPrice = Math.min(etf.lowPrice, etf.price);
+            etf.changePercent = ((etf.price - etf.openPrice) / etf.openPrice) * 100;
+            etf.priceHistory.push(etf.price);
+            if (etf.priceHistory.length > 40) etf.priceHistory.shift();
+        }
+
+        function dailySettlement() {
+            let interest = 0;
+            if (Game.marginLoan) {
+                const dailyRate = CONFIG.interestRate / 365;
+                const loanInterest = Game.marginLoan.amount * dailyRate;
+                interest += loanInterest;
+                Game.marginLoan.amount += loanInterest;
+                Game.marginLoan.interestAccrued = (Game.marginLoan.interestAccrued || 0) + loanInterest;
+                Game.totalInterestPaid = (Game.totalInterestPaid || 0) + loanInterest;
+                addTrade(`📊 融资利息: ${loanInterest.toFixed(2)}`, 'system');
+            }
+            if (Game.shortPositions) {
+                const dailyRate = CONFIG.interestRate / 365;
+                Object.values(Game.shortPositions).forEach(s => {
+                    const st = Game.stocks.find(x => x.code === s.code);
+                    if (st) {
+                        const value = s.shares * st.price;
+                        const shortInterest = value * dailyRate;
+                        interest += shortInterest;
+                        s.interestAccrued = (s.interestAccrued || 0) + shortInterest;
+                        Game.totalInterestPaid = (Game.totalInterestPaid || 0) + shortInterest;
+                        Game.cash -= shortInterest;
+                        addTrade(`📊 融券利息(${s.code}): ${shortInterest.toFixed(2)}`, 'system');
+                    }
+                });
+            }
+            if (interest > 0 && Game.cash < interest) {
+                if (!Game.marginLoan) Game.marginLoan = { amount: 0, interestAccrued: 0, startDay: Game.day };
+                const deficit = interest - Game.cash;
+                Game.marginLoan.amount += deficit;
+                Game.cash = 0;
+                addTrade(`⚠️ 现金不足支付利息，融资负债增加 ${deficit.toFixed(2)}`, 'system');
+            } else if (interest > 0) {
+                Game.cash -= interest;
+            }
+            checkMarginCall();
+        }
+
+        function checkMarginCall() {
+            const ratio = getMarginRatio(Game);
+            if (ratio === Infinity) return;
+            if (ratio < CONFIG.maintenanceMargin) {
+                let forced = false;
+                if (Game.shortPositions) {
+                    const shortCodes = Object.keys(Game.shortPositions);
+                    shortCodes.sort((a,b) => {
+                        const sa = Game.shortPositions[a], sb = Game.shortPositions[b];
+                        const stA = Game.stocks.find(x => x.code === a), stB = Game.stocks.find(x => x.code === b);
+                        const lossA = stA ? (sa.costBasis - stA.price) * sa.shares : 0;
+                        const lossB = stB ? (sb.costBasis - stB.price) * sb.shares : 0;
+                        return lossB - lossA;
+                    });
+                    for (let code of shortCodes) {
+                        const short = Game.shortPositions[code];
+                        const st = Game.stocks.find(x => x.code === code);
+                        if (!st) continue;
+                        const cost = short.shares * st.price * (1 + CONFIG.feeRate);
+                        if (Game.cash >= cost) {
+                            Game.cash -= cost;
+                            const profit = (short.costBasis - st.price) * short.shares - cost * CONFIG.feeRate;
+                            addTrade(`💥 强制平仓融券 ${st.name} ${short.shares}股，盈亏: ${profit.toFixed(2)}`, 'system');
+                            delete Game.shortPositions[code];
+                            forced = true;
+                            Game.forceCloseCount++;
+                            break;
+                        }
+                    }
+                }
+                if (getMarginRatio(Game) < CONFIG.maintenanceMargin) {
+                    const codes = Object.keys(Game.portfolio);
+                    for (let code of codes) {
+                        const entry = Game.portfolio[code];
+                        const totalShares = entry.batches.reduce((s,b) => s + b.shares, 0);
+                        const st = Game.stocks.find(x => x.code === code);
+                        if (!st) continue;
+                        const revenue = totalShares * st.price * (1 - CONFIG.feeRate);
+                        Game.cash += revenue;
+                        repayDebt();
+                        delete Game.portfolio[code];
+                        addTrade(`💥 强制平仓融资 ${st.name} ${totalShares}股`, 'system');
+                        forced = true;
+                        Game.forceCloseCount++;
+                        break;
+                    }
+                }
+                if (forced) setTimeout(() => checkMarginCall(), 100);
+                updateAll();
+                checkAchievements();
+            }
+        }
+
+        function getSellableShares(code) {
+            const entry = Game.portfolio[code];
+            if (!entry) return 0;
+            let sellable = 0;
+            entry.batches.forEach(b => { if (b.buyDay < Game.day) sellable += b.shares; });
+            return sellable;
+        }
+
+        // ======================================================================
+        // 9. 交易相关函数（买卖、ETF申赎）
+        // ======================================================================
+        function openTradeModal(code, mode) {
+            const stock = Game.stocks.find(s => s.code === code);
+            if (!stock) { alert('股票不存在'); return; }
+            if (mode === 'buy' && stock.limitUp) { alert('涨停，无法买入'); return; }
+            if (mode === 'sell' && stock.limitDown) { alert('跌停，无法卖出'); return; }
+            if (mode === 'sell') {
+                const hasPosition = Game.portfolio[code] && Game.portfolio[code].batches.length > 0;
+                const hasShort = Game.shortPositions[code] && Game.shortPositions[code].shares > 0;
+                if (!hasPosition && !hasShort) {
+                    alert('您没有该股票的持仓或融券负债');
+                    return;
+                }
+            }
+            Game.selectedStock = stock;
+            Game.tradeMode = mode;
+            setText('modalTitle', mode === 'buy' ? '买入' : '卖出');
+            setText('modalStockName', stock.name + ' (' + stock.code + ')');
+            setText('modalPrice', stock.price.toFixed(2));
+            const qtyInput = document.getElementById('tradeQuantity');
+            if (qtyInput) qtyInput.value = 100;
+            const btn = document.getElementById('confirmBtn');
+            if (btn) {
+                btn.className = `modal-btn ${mode === 'buy' ? 'btn-confirm-buy' : 'btn-confirm-sell'}`;
+                btn.textContent = mode === 'buy' ? '确认买入' : '确认卖出';
+            }
+
+            const marginCheck = document.getElementById('tradeMarginCheck');
+            const marginLabel = document.getElementById('tradeMarginLabel');
+            const sellableHint = document.getElementById('sellableHint');
+            const sellableCount = document.getElementById('sellableCount');
+            if (marginCheck) { marginCheck.disabled = false; marginCheck.checked = false; }
+
+            if (mode === 'sell') {
+                const sellable = getSellableShares(code);
+                if (sellableHint && sellableCount) {
+                    sellableCount.textContent = sellable;
+                    sellableHint.style.display = 'block';
+                }
+            } else {
+                if (sellableHint) sellableHint.style.display = 'none';
+            }
+
+            if (mode === 'buy') {
+                if (marginLabel) marginLabel.textContent = '🔹 启用融资买入 (借入资金)';
+                const marginSummary = document.getElementById('marginSummary');
+                if (marginSummary) marginSummary.style.display = 'none';
+                const financeHint = document.getElementById('financeHint');
+                if (financeHint) financeHint.style.display = 'none';
+                const cashHint = document.getElementById('cashSufficientHint');
+                if (cashHint) cashHint.style.display = 'none';
+            } else {
+                const hasPos = Game.portfolio[code] && Game.portfolio[code].batches.length > 0;
+                if (!hasPos) {
+                    if (marginCheck) { marginCheck.checked = true; marginCheck.disabled = false; }
+                    if (marginLabel) marginLabel.textContent = '🔹 融券卖出 (做空)';
+                    const marginSummary = document.getElementById('marginSummary');
+                    if (marginSummary) marginSummary.style.display = 'block';
+                    const financeHint = document.getElementById('financeHint');
+                    if (financeHint) financeHint.style.display = 'none';
+                    const cashHint = document.getElementById('cashSufficientHint');
+                    if (cashHint) cashHint.style.display = 'none';
+                } else {
+                    if (marginCheck) { marginCheck.checked = false; marginCheck.disabled = true; }
+                    if (marginLabel) marginLabel.textContent = '🔸 普通卖出 (平仓)';
+                    const marginSummary = document.getElementById('marginSummary');
+                    if (marginSummary) marginSummary.style.display = 'none';
+                    const financeHint = document.getElementById('financeHint');
+                    if (financeHint) financeHint.style.display = 'none';
+                    const cashHint = document.getElementById('cashSufficientHint');
+                    if (cashHint) cashHint.style.display = 'none';
+                }
+            }
+            calculateTrade();
+            document.getElementById('tradeModal').style.display = 'grid';
+        }
+
+        function closeModal() {
+            document.getElementById('tradeModal').style.display = 'none';
+        }
+
+        function setTradeFraction(fraction) {
+            const stock = Game.selectedStock;
+            if (!stock) return;
+            const mode = Game.tradeMode;
+            const margin = document.getElementById('tradeMarginCheck') ? document.getElementById('tradeMarginCheck').checked : false;
+            let maxShares = 0;
+            if (mode === 'buy') {
+                let cashAvailable = Game.cash;
+                if (margin) cashAvailable += Game.cash * (1 / CONFIG.marginRate - 1);
+                const maxByCash = Math.floor(cashAvailable / (stock.price * (1 + CONFIG.feeRate)));
+                maxShares = Math.floor(maxByCash / 100) * 100;
+            } else {
+                const sellable = getSellableShares(stock.code);
+                if (margin) {
+                    const marginAvailable = Game.cash * CONFIG.marginRate;
+                    const maxByCash = Math.floor(marginAvailable / (stock.price * (1 + CONFIG.feeRate)));
+                    maxShares = Math.floor(maxByCash / 100) * 100;
+                } else {
+                    maxShares = Math.floor(sellable / 100) * 100;
+                }
+            }
+            let target = Math.floor(maxShares * fraction);
+            target = Math.floor(target / 100) * 100;
+            if (target < 100 && maxShares >= 100) target = 100;
+            else if (target < 100) target = 0;
+            const qtyInput = document.getElementById('tradeQuantity');
+            if (qtyInput) qtyInput.value = target;
+            calculateTrade();
+        }
+
+        function calculateTrade() {
+            const q = parseInt(document.getElementById('tradeQuantity') ? document.getElementById('tradeQuantity').value : 0) || 0;
+            const p = Game.selectedStock ? Game.selectedStock.price : 0;
+            const amount = q * p;
+            const fee = amount * CONFIG.feeRate;
+            const total = Game.tradeMode === 'buy' ? amount + fee : amount - fee;
+            setText('sumAmount', amount.toFixed(0));
+            setText('sumFee', fee.toFixed(2));
+            setText('sumTotal', total.toFixed(0));
+
+            const margin = document.getElementById('tradeMarginCheck') ? document.getElementById('tradeMarginCheck').checked : false;
+            const marginSummary = document.getElementById('marginSummary');
+            if (margin && Game.tradeMode === 'sell') {
+                const marginReq = amount * CONFIG.marginRate;
+                setText('sumMargin', marginReq.toFixed(0));
+                if (marginSummary) marginSummary.style.display = 'block';
+            } else {
+                if (marginSummary) marginSummary.style.display = 'none';
+            }
+
+            const financeHint = document.getElementById('financeHint');
+            const cashHint = document.getElementById('cashSufficientHint');
+            if (Game.tradeMode === 'buy' && margin) {
+                if (Game.cash < total) {
+                    const financeAmount = total - Game.cash;
+                    setText('financeAmount', '借入 ' + financeAmount.toFixed(0));
+                    if (financeHint) financeHint.style.display = 'flex';
+                    if (cashHint) cashHint.style.display = 'none';
+                } else {
+                    if (financeHint) financeHint.style.display = 'none';
+                    if (cashHint) cashHint.style.display = 'flex';
+                }
+            } else {
+                if (financeHint) financeHint.style.display = 'none';
+                if (cashHint) cashHint.style.display = 'none';
+            }
+
+            if (Game.tradeMode === 'sell') {
+                const sellable = getSellableShares(Game.selectedStock.code);
+                const marginCheck = document.getElementById('tradeMarginCheck');
+                if (!marginCheck || !marginCheck.checked) {
+                    if (q > sellable && sellable > 0) {
+                        const qtyInput = document.getElementById('tradeQuantity');
+                        if (qtyInput) {
+                            const corrected = Math.floor(sellable / 100) * 100;
+                            qtyInput.value = corrected;
+                            setTimeout(calculateTrade, 10);
+                        }
+                    }
+                }
+            }
+        }
+
+        function executeTrade() {
+            const stock = Game.selectedStock;
+            if (!stock) { alert('请选择股票'); return; }
+            const q = parseInt(document.getElementById('tradeQuantity') ? document.getElementById('tradeQuantity').value : 0) || 0;
+            if (q < 100 || q % 100 !== 0) { alert('必须100股整数倍'); return; }
+            const amount = q * stock.price;
+            const fee = amount * CONFIG.feeRate;
+            const total = amount + fee;
+            const margin = document.getElementById('tradeMarginCheck') ? document.getElementById('tradeMarginCheck').checked : false;
+
+            if (Game.tradeMode === 'buy') {
+                if (Game.shortPositions[stock.code] && Game.shortPositions[stock.code].shares > 0) {
+                    const short = Game.shortPositions[stock.code];
+                    const buyToCover = Math.min(q, short.shares);
+                    const cost = buyToCover * stock.price * (1 + CONFIG.feeRate);
+                    if (Game.cash < cost) { alert('现金不足，无法买券还券'); return; }
+                    Game.cash -= cost;
+                    short.shares -= buyToCover;
+                    if (short.shares <= 0) delete Game.shortPositions[stock.code];
+                    const remainingQ = q - buyToCover;
+                    if (remainingQ > 0) {
+                        const normalCost = remainingQ * stock.price * (1 + CONFIG.feeRate);
+                        let useMargin = margin && Game.cash < normalCost;
+                        if (useMargin) {
+                            const loanAmount = normalCost - Game.cash;
+                            if (!Game.marginLoan) Game.marginLoan = { amount: 0, interestAccrued: 0, startDay: Game.day };
+                            Game.marginLoan.amount += loanAmount;
+                            Game.cash = 0;
+                            Game.marginTradeCount++;
+                            addTrade(`💳 融资买入 ${stock.name} ${remainingQ}股 (借入 ${loanAmount.toFixed(0)})`, 'system');
+                        } else {
+                            if (Game.cash < normalCost) { alert('现金不足，请启用融资或减少数量'); return; }
+                            Game.cash -= normalCost;
+                        }
+                        if (!Game.portfolio[stock.code]) Game.portfolio[stock.code] = { batches: [] };
+                        Game.portfolio[stock.code].batches.push({ shares: remainingQ, costBasis: stock.price, buyDay: Game.day });
+                    }
+                    addTrade(`买券还券 ${stock.name} ${buyToCover}股`, 'buy');
+                    if (remainingQ > 0) addTrade(`普通买入 ${stock.name} ${remainingQ}股`, 'buy');
+                } else {
+                    let useMargin = margin && Game.cash < total;
+                    if (useMargin) {
+                        const loanAmount = total - Game.cash;
+                        if (!Game.marginLoan) Game.marginLoan = { amount: 0, interestAccrued: 0, startDay: Game.day };
+                        Game.marginLoan.amount += loanAmount;
+                        Game.cash = 0;
+                        Game.marginTradeCount++;
+                        addTrade(`💳 融资买入 ${stock.name} ${q}股 (借入 ${loanAmount.toFixed(0)})`, 'system');
+                    } else {
+                        if (Game.cash < total) { alert('现金不足，请启用融资或减少数量'); return; }
+                        Game.cash -= total;
+                    }
+                    if (!Game.portfolio[stock.code]) Game.portfolio[stock.code] = { batches: [] };
+                    Game.portfolio[stock.code].batches.push({ shares: q, costBasis: stock.price, buyDay: Game.day });
+                    addTrade(`买入 ${stock.name} ${q}股`, 'buy');
+                }
+            } else {
+                if (margin) {
+                    if (Game.shortPositions[stock.code] && Game.shortPositions[stock.code].shares > 0) {
+                        alert('您已持有该股票的空单，不可重复做空');
+                        return;
+                    }
+                    const marginReq = amount * CONFIG.marginRate;
+                    if (Game.cash < marginReq) { alert('现金不足，无法提供保证金'); return; }
+                    Game.cash -= marginReq;
+                    Game.shortPositions[stock.code] = {
+                        shares: q,
+                        costBasis: stock.price,
+                        startDay: Game.day,
+                        marginDeposit: marginReq,
+                        interestAccrued: 0
+                    };
+                    Game.cash += amount * (1 - CONFIG.feeRate);
+                    Game.shortCount++;
+                    addTrade(`🔻 融券卖出 ${stock.name} ${q}股 (保证金 ${marginReq.toFixed(0)})`, 'sell');
+                } else {
+                    if (!Game.portfolio[stock.code] || Game.portfolio[stock.code].batches.length === 0) {
+                        alert('您没有该股票的持仓，无法普通卖出');
+                        return;
+                    }
+                    const sellable = getSellableShares(stock.code);
+                    if (sellable < q) {
+                        alert(`T+1限制：可卖数量为 ${sellable} 股，不足 ${q} 股`);
+                        return;
+                    }
+                    const entry = Game.portfolio[stock.code];
+                    let remaining = q, cashAdd = 0, newBatches = [];
+                    for (let b of entry.batches) {
+                        if (remaining <= 0) { newBatches.push(b); continue; }
+                        if (b.buyDay >= Game.day) { newBatches.push(b); continue; }
+                        if (b.shares <= remaining) {
+                            remaining -= b.shares;
+                            cashAdd += b.shares * stock.price * 0.9975;
+                        } else {
+                            const sellFromThis = remaining;
+                            cashAdd += sellFromThis * stock.price * 0.9975;
+                            b.shares -= sellFromThis;
+                            remaining = 0;
+                            newBatches.push(b);
+                        }
+                    }
+                    if (remaining > 0) { alert('卖出数量超过可卖数量'); return; }
+                    Game.cash += cashAdd;
+                    entry.batches = newBatches.filter(b => b.shares > 0);
+                    if (entry.batches.length === 0) delete Game.portfolio[stock.code];
+                    addTrade(`卖出 ${stock.name} ${q}股`, 'sell');
+                    repayDebt();
+                }
+            }
+
+            Game.tradeCount++;
+            closeModal();
+            updateAll();
+            checkAchievements();
+            checkMarginCall();
+        }
+
+        // --- ETF 申赎 ---
+        let selectedEtf = null, etfAction = 'create';
+        function openEtfModal(code) {
+            const etf = Game.etfs.find(e => e.code === code);
+            if (!etf) return;
+            selectedEtf = etf; etfAction = 'create';
+            setText('etfModalTitle', '📦 ' + etf.name + ' 申购/赎回');
+            setText('etfModalName', etf.name + ' (' + etf.code + ')');
+            setText('etfNav', etf.nav.toFixed(2));
+            setText('etfPrice', etf.price.toFixed(2));
+            const redeemCheck = document.getElementById('etfActionRedeem');
+            if (redeemCheck) redeemCheck.checked = false;
+            const qtyInput = document.getElementById('etfQuantity');
+            if (qtyInput) qtyInput.value = 1;
+            toggleEtfAction();
+            calculateEtfTrade();
+            document.getElementById('etfModal').style.display = 'grid';
+        }
+
+        function toggleEtfAction() {
+            const redeem = document.getElementById('etfActionRedeem').checked;
+            etfAction = redeem ? 'redeem' : 'create';
+            const btn = document.getElementById('etfConfirmBtn');
+            if (etfAction === 'create') { btn.textContent = '确认申购'; btn.className = 'modal-btn btn-success'; }
+            else { btn.textContent = '确认赎回'; btn.className = 'modal-btn btn-danger'; }
+            calculateEtfTrade();
+        }
+
+        function setEtfFraction(fraction) {
+            const qtyInput = document.getElementById('etfQuantity');
+            if (!qtyInput) return;
+            const etf = selectedEtf;
+            if (!etf) return;
+            let maxQty = 0;
+            if (etfAction === 'create') {
+                let minRatio = Infinity;
+                etf.components.forEach((st, idx) => {
+                    const needed = etf.weights[idx] * 100;
+                    const pos = Game.portfolio[st.code];
+                    const shares = pos ? pos.batches.reduce((s,b) => s + b.shares, 0) : 0;
+                    const ratio = Math.floor(shares / needed);
+                    if (ratio < minRatio) minRatio = ratio;
+                });
+                maxQty = minRatio || 0;
+            } else {
+                const shares = Game.etfPositions[etf.code] || 0;
+                maxQty = Math.floor(shares);
+            }
+            let target = Math.floor(maxQty * fraction);
+            if (target < 1 && maxQty >= 1) target = 1;
+            else if (target < 1) target = 0;
+            qtyInput.value = target;
+            calculateEtfTrade();
+        }
+
+        function calculateEtfTrade() {
+            const qty = parseInt(document.getElementById('etfQuantity').value) || 0;
+            const etf = selectedEtf;
+            if (!etf) return;
+            let totalNav = 0, compSummary = '';
+            if (etfAction === 'create') {
+                let comps = [];
+                etf.components.forEach((st, idx) => {
+                    const needed = Math.round(etf.weights[idx] * 100 * qty);
+                    if (needed > 0) comps.push(st.name + ' x' + needed);
+                });
+                compSummary = comps.join(', ');
+                totalNav = qty * etf.nav;
+            } else {
+                let comps = [];
+                etf.components.forEach((st, idx) => {
+                    const received = Math.round(etf.weights[idx] * 100 * qty);
+                    if (received > 0) comps.push(st.name + ' x' + received);
+                });
+                compSummary = comps.join(', ');
+                totalNav = qty * etf.nav;
+            }
+            setText('etfComponentsSummary', compSummary || '无');
+            setText('etfTotalNav', totalNav.toFixed(2));
+        }
+
+        function executeEtfTrade() {
+            const etf = selectedEtf;
+            if (!etf) return;
+            const qty = parseInt(document.getElementById('etfQuantity').value) || 0;
+            if (qty <= 0) { alert('请输入正数'); return; }
+            if (etfAction === 'create') {
+                let canCreate = true, compDetails = [];
+                etf.components.forEach((st, idx) => {
+                    const needed = Math.round(etf.weights[idx] * 100 * qty);
+                    if (needed > 0) {
+                        const pos = Game.portfolio[st.code];
+                        const shares = pos ? pos.batches.reduce((s,b) => s + b.shares, 0) : 0;
+                        if (shares < needed) { canCreate = false; compDetails.push(st.name + '(不足)'); }
+                    }
+                });
+                if (!canCreate) { alert('成分股不足: ' + compDetails.join(', ')); return; }
+                etf.components.forEach((st, idx) => {
+                    const needed = Math.round(etf.weights[idx] * 100 * qty);
+                    if (needed > 0) {
+                        let remaining = needed;
+                        const pos = Game.portfolio[st.code];
+                        if (pos) {
+                            let newBatches = [];
+                            for (let b of pos.batches) {
+                                if (remaining <= 0) { newBatches.push(b); continue; }
+                                if (b.shares <= remaining) { remaining -= b.shares; }
+                                else { b.shares -= remaining; remaining = 0; newBatches.push(b); }
+                            }
+                            pos.batches = newBatches.filter(b => b.shares > 0);
+                            if (pos.batches.length === 0) delete Game.portfolio[st.code];
+                        }
+                    }
+                });
+                Game.etfPositions[etf.code] = (Game.etfPositions[etf.code] || 0) + qty;
+                Game.etfCreateCount++;
+                addTrade(`📦 申购 ${etf.name} ${qty}份`, 'system');
+            } else {
+                const currentShares = Game.etfPositions[etf.code] || 0;
+                if (currentShares < qty) { alert('ETF持仓不足'); return; }
+                Game.etfPositions[etf.code] -= qty;
+                if (Game.etfPositions[etf.code] <= 0) delete Game.etfPositions[etf.code];
+                etf.components.forEach((st, idx) => {
+                    const received = Math.round(etf.weights[idx] * 100 * qty);
+                    if (received > 0) {
+                        if (!Game.portfolio[st.code]) Game.portfolio[st.code] = { batches: [] };
+                        Game.portfolio[st.code].batches.push({ shares: received, costBasis: st.price, buyDay: Game.day });
+                    }
+                });
+                Game.etfRedeemCount++;
+                addTrade(`📦 赎回 ${etf.name} ${qty}份`, 'system');
+            }
+            closeEtfModal();
+            updateAll();
+            checkAchievements();
+        }
+
+        function closeEtfModal() { document.getElementById('etfModal').style.display = 'none'; }
+
+        // ======================================================================
+        // 10. 新闻 & 交易记录
+        // ======================================================================
+        function generateNews() {
+            const t = NEWS_TEMPLATES[Math.floor(Math.random() * NEWS_TEMPLATES.length)];
+            addNews(t);
+            Game.stocks.forEach(st => { if (t.sectors.includes('*') || t.sectors.includes(st.sector)) st.newsImpact += t.impact * (0.35 + Math.random() * 0.65); });
+            Game.etfs.forEach(etf => {
+                let hasImpact = false;
+                etf.components.forEach(st => { if (t.sectors.includes('*') || t.sectors.includes(st.sector)) hasImpact = true; });
+                if (hasImpact) etf.newsImpact += t.impact * (0.35 + Math.random() * 0.65);
+            });
+            Game.eventCount++;
+            setText('eventCount', Game.eventCount);
+        }
+
+        function addNews(t) {
+            Game.news.unshift({ id: Date.now(), time: `第${Game.day}天`, ...t });
+            if (Game.news.length > 50) Game.news.pop();
+            updateNewsUI();
+        }
+
+        function updateNewsUI() {
+            const container = document.getElementById('newsList');
+            if (!container) return;
+            const html = Game.news.map(n => `
+                <div class="news-item news-${n.type}">
+                    <span class="news-time">${n.time}</span>
+                    <div class="news-title">${n.title}</div>
+                    <div class="news-content">${n.content}</div>
+                </div>
+            `).join('');
+            container.innerHTML = html;
+        }
+
+        function addTrade(text, type) {
+            Game.trades.unshift({ time: `第${Game.day}天`, text, type });
+            if (Game.trades.length > 30) Game.trades.pop();
+        }
+
+        // ======================================================================
+        // 11. AI 交易（简化）
+        // ======================================================================
+        function aiTrade() {
+            Game.aiPlayers.forEach(ai => {
+                if (ai.isPlayer) return;
+                const shuffled = [...Game.stocks].sort(() => Math.random() - 0.5);
+                const selected = shuffled.slice(0, 12);
+                selected.forEach(stock => {
+                    if (stock.limitUp || stock.limitDown) return;
+                    const score = calculateAIScore(ai, stock);
+                    if (score > 0.65 && ai.cash > stock.price * 100) {
+                        const maxShares = Math.floor(ai.cash / (stock.price * 1.0025));
+                        const shares = Math.floor(maxShares * (score - 0.55) * ai.riskLevel / 50) * 100;
+                        if (shares >= 100 && Math.random() < 0.30) {
+                            ai.cash -= shares * stock.price * 1.0025;
+                            if (!ai.portfolio[stock.code]) ai.portfolio[stock.code] = { batches: [] };
+                            ai.portfolio[stock.code].batches.push({ shares, costBasis: stock.price, buyDay: Game.day });
+                        }
+                    } else if (score < 0.35 && ai.portfolio[stock.code]) {
+                        const entry = ai.portfolio[stock.code];
+                        const totalShares = entry.batches.reduce((s,b) => s + b.shares, 0);
+                        if (totalShares > 0) {
+                            const sellShares = Math.floor(totalShares * (0.65 - score) / 40) * 100;
+                            if (sellShares >= 100 && Math.random() < 0.35) {
+                                let remaining = sellShares, newBatches = [], cashAdd = 0;
+                                for (let b of entry.batches) {
+                                    if (remaining <= 0) { newBatches.push(b); continue; }
+                                    if (b.shares <= remaining) { remaining -= b.shares; cashAdd += b.shares * stock.price * 0.9975; }
+                                    else { const sellFromThis = remaining; cashAdd += sellFromThis * stock.price * 0.9975; b.shares -= sellFromThis; remaining = 0; newBatches.push(b); }
+                                }
+                                ai.cash += cashAdd;
+                                entry.batches = newBatches.filter(b => b.shares > 0);
+                                if (entry.batches.length === 0) delete ai.portfolio[stock.code];
+                            }
+                        }
+                    }
+                });
+                let pv = 0;
+                Object.entries(ai.portfolio).forEach(([c, entry]) => {
+                    const totalShares = entry.batches.reduce((s,b) => s + b.shares, 0);
+                    const st = Game.stocks.find(x => x.code === c);
+                    if (st) pv += totalShares * st.price;
+                });
+                ai.totalAssets = ai.cash + pv;
+            });
+        }
+
+        function calculateAIScore(ai, stock) {
+            let score = 0.5 + (Math.random() - 0.5) * 0.2;
+            if (stock.pe < CONFIG.peMean * 0.8) score += 0.1;
+            if (stock.pe > CONFIG.peMean * 1.2) score -= 0.1;
+            switch (ai.style) {
+                case '价值投资': if (stock.price < stock.fairPrice * 0.9) score += 0.3; if (stock.price > stock.fairPrice * 1.1) score -= 0.3; break;
+                case '激进投机': score += stock.momentum / 10 + (Math.random() - 0.5) * 0.4; break;
+                case '量化交易': const ma5 = stock.priceHistory.slice(-5).reduce((a,b) => a+b)/5; const ma20 = stock.priceHistory.reduce((a,b) => a+b)/stock.priceHistory.length; if (stock.price > ma5 && ma5 > ma20) score += 0.25; if (stock.price < ma5 && ma5 < ma20) score -= 0.25; break;
+                case '稳健成长': score += stock.changePercent / 30; break;
+                case '短线作手': score += (Math.random() - 0.5) * 0.5 + stock.changePercent / 15; break;
+                case '成长投资': score += stock.trend * 120 + stock.momentum / 15; break;
+                case '烟蒂投资': if (stock.price < stock.basePrice * 0.6) score += 0.35; break;
+                case '全天候': score = 0.5 + (Math.random() - 0.5) * 0.15; break;
+            }
+            return Math.max(0, Math.min(1, score));
+        }
+
+        // ======================================================================
+        // 12. 游戏主循环
+        // ======================================================================
+        function gameTick() {
+            Game.stocks.forEach(stock => {
+                applyValuationRegression(stock);
+                const random = (Math.random() - 0.5) * 2 * stock.volatility * CONFIG.volatilityMultiplier;
+                const meanReversion = (stock.basePrice - stock.price) * 0.002;
+                const momentumEffect = stock.momentum * 0.003;
+                const betaEffect = stock.beta * (Game.marketSentiment - 50) / 4000;
+                let newPrice = stock.price * (1 + random + stock.trend + meanReversion + momentumEffect + betaEffect + stock.newsImpact);
+                const limitUpPrice = stock.openPrice * (1 + CONFIG.limitUp);
+                const limitDownPrice = stock.openPrice * (1 + CONFIG.limitDown);
+                if (newPrice >= limitUpPrice) { newPrice = limitUpPrice; stock.limitUp = true; stock.limitDown = false; }
+                else if (newPrice <= limitDownPrice) { newPrice = limitDownPrice; stock.limitDown = true; stock.limitUp = false; }
+                else { stock.limitUp = false; stock.limitDown = false; }
+                stock.price = Math.max(0.01, newPrice);
+                stock.newsImpact *= 0.78;
+                stock.priceHistory.push(stock.price);
+                if (stock.priceHistory.length > 40) stock.priceHistory.shift();
+                stock.highPrice = Math.max(stock.highPrice, stock.price);
+                stock.lowPrice = Math.min(stock.lowPrice, stock.price);
+                stock.changePercent = ((stock.price - stock.openPrice) / stock.openPrice) * 100;
+                stock.momentum = stock.momentum * 0.82 + stock.changePercent * 0.18;
+                if (Math.random() < 0.035) stock.trend = (Math.random() - 0.5) * 0.008;
+                if (stock.eps > 0) stock.pe = stock.price / stock.eps;
+            });
+
+            Game.etfs.forEach(etf => updateETFPrice(etf));
+            aiTrade();
+
+            if (Math.random() < 0.04) {
+                Game.day++;
+                Game.stocks.forEach(stock => {
+                    stock.openPrice = stock.price;
+                    stock.highPrice = stock.price;
+                    stock.lowPrice = stock.price;
+                    stock.changePercent = 0;
+                    stock.limitUp = false;
+                    stock.limitDown = false;
+                });
+                Game.etfs.forEach(etf => {
+                    etf.openPrice = etf.price;
+                    etf.highPrice = etf.price;
+                    etf.lowPrice = etf.price;
+                    etf.changePercent = 0;
+                    etf.limitUp = false;
+                    etf.limitDown = false;
+                });
+                dailySettlement();
+
+                let pv = 0;
+                Object.entries(Game.portfolio).forEach(([c, entry]) => {
+                    const totalShares = entry.batches.reduce((sum, b) => sum + b.shares, 0);
+                    const st = Game.stocks.find(x => x.code === c);
+                    if (st) pv += totalShares * st.price;
+                });
+                Object.entries(Game.etfPositions).forEach(([code, shares]) => {
+                    const etf = Game.etfs.find(e => e.code === code);
+                    if (etf) pv += shares * etf.price;
+                });
+                const total = Game.cash + pv;
+                Game.assetHistory.push(total);
+                if (Game.assetHistory.length > 40) Game.assetHistory.shift();
+                checkAchievements();
+            }
+
+            const upStocks = Game.stocks.filter(s => s.changePercent > 0).length;
+            const upETFs = Game.etfs.filter(e => e.changePercent > 0).length;
+            const totalUp = upStocks + upETFs;
+            const totalCount = Game.stocks.length + Game.etfs.length;
+            Game.marketSentiment = 25 + (totalUp / totalCount) * 50 + (Math.random() - 0.5) * 15;
+            updateAll();
+            if (Game.selectedStock) {
+                const updated = [...Game.stocks, ...Game.etfs].find(s => s.code === Game.selectedStock.code);
+                if (updated) { Game.selectedStock = updated; drawChart(updated); }
+            }
+        }
+
+        // ======================================================================
+        // 13. UI 绘制函数（图表、列表、持仓等）
+        // ======================================================================
+        function drawLineChart(container, data, color) {
+            if (!container) return;
+            if (!data || data.length < 2) {
+                container.innerHTML = '<div style="text-align:center;color:#999;padding:10px;font-size:11px;">暂无数据</div>';
+                return;
+            }
+            const width = container.clientWidth || 200;
+            const height = container.clientHeight || 100;
+            const padding = { top: 4, bottom: 4, left: 4, right: 4 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+            const max = Math.max(...data);
+            const min = Math.min(...data);
+            const range = max - min || 1;
+            let path = '';
+            const step = chartWidth / (data.length - 1);
+            data.forEach((val, i) => {
+                const x = padding.left + i * step;
+                const y = padding.top + chartHeight - ((val - min) / range) * chartHeight;
+                if (i === 0) path += `M ${x} ${y}`;
+                else path += ` L ${x} ${y}`;
+            });
+            const lastX = padding.left + (data.length - 1) * step;
+            const fillPath = path + ` L ${lastX} ${padding.top + chartHeight} L ${padding.left} ${padding.top + chartHeight} Z`;
+            const svg = `
+                <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+                    <path d="${fillPath}" fill="${color}22" stroke="none" />
+                    <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+                    <circle cx="${padding.left + (data.length - 1) * step}" cy="${padding.top + chartHeight - ((data[data.length - 1] - min) / range) * chartHeight}" r="3" fill="${color}" />
+                </svg>
+            `;
+            container.innerHTML = svg;
+        }
+
+        function drawChart(stock) {
+            if (!stock) return;
+            const container = document.getElementById('chartBox');
+            if (!container) return;
+            const data = stock.priceHistory;
+            const color = stock.changePercent >= 0 ? '#007000' : '#c00';
+            drawLineChart(container, data, color);
+        }
+
+        function selectStock(code) {
+            const stock = [...Game.stocks, ...Game.etfs].find(s => s.code === code);
+            if (!stock) return;
+            Game.selectedStock = stock;
+            setText('chartTitle', '📊 ' + stock.name + ' 走势');
+            setText('detailOpen', stock.openPrice.toFixed(2));
+            setText('detailHigh', stock.highPrice.toFixed(2));
+            setText('detailLow', stock.lowPrice.toFixed(2));
+            setText('detailType', stock.isETF ? 'ETF' : '股票');
+            const detail = document.getElementById('stockDetail');
+            if (detail) detail.style.display = 'grid';
+            drawChart(stock);
+            updateAssetChart();
+        }
+
+        function updateAssetChart() {
+            const container = document.getElementById('assetChartBox');
+            if (!container) return;
+            const data = Game.assetHistory;
+            const color = data.length >= 2 && data[data.length - 1] >= data[0] ? '#007000' : '#c00';
+            drawLineChart(container, data, color);
+        }
+
+        function updateTicker() {
+            const container = document.getElementById('tickerTape');
+            if (!container) return;
+            let html = '';
+            [...Game.stocks, ...Game.etfs].forEach(st => {
+                const clr = st.changePercent >= 0 ? '#007000' : '#c00';
+                const tag = st.isETF ? 'ETF' : '';
+                html += `<span class="ticker-item">${st.name} ${tag} <span style="color:${clr}">${st.price.toFixed(2)} (${st.changePercent>=0?'+':''}${st.changePercent.toFixed(2)}%)</span></span>`;
+            });
+            container.innerHTML = html + html;
+        }
+
+        // ======================================================================
+        // 14. 主 UI 更新
+        // ======================================================================
+        function updateAll() {
+            let pv = 0;
+            Object.entries(Game.portfolio).forEach(([c, entry]) => {
+                const st = Game.stocks.find(x => x.code === c);
+                if (!st) return;
+                const shares = entry.batches.reduce((s, b) => s + b.shares, 0);
+                pv += shares * st.price;
+            });
+            Object.entries(Game.etfPositions).forEach(([code, shares]) => {
+                const etf = Game.etfs.find(e => e.code === code);
+                if (etf) pv += shares * etf.price;
+            });
+            const liability = getTotalLiability(Game);
+            const ratio = getMarginRatio(Game);
+            const ta = getTotalAssets(Game);
+            const pr = getProfitRate(Game);
+
+            setText('gameDay', Game.day);
+            setText('cash', Game.cash.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+            setText('portfolioValue', pv.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+            setText('totalAssets', ta.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+            setText('liabilityValue', liability.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+            setText('tradeCount', Game.tradeCount);
+            const stockCount = Object.keys(Game.portfolio).length + Object.keys(Game.etfPositions).length;
+            setText('stockCount', stockCount);
+            const re = document.getElementById('profitRate');
+            if (re) {
+                re.textContent = `${pr>=0?'+':''}${pr.toFixed(2)}%`;
+                re.className = `stat-value ${pr>=0?'green':'red'}`;
+            }
+
+            const ratioEl = document.getElementById('marginRatio');
+            if (ratioEl) {
+                if (liability === 0) {
+                    ratioEl.textContent = '--%';
+                    ratioEl.className = 'stat-value';
+                } else {
+                    const ratioPercent = (ratio * 100).toFixed(1);
+                    ratioEl.textContent = ratioPercent + '%';
+                    ratioEl.className = `stat-value ${ratio >= CONFIG.maintenanceMargin ? 'green' : 'red'}`;
+                }
+            }
+
+            Game.player.cash = Game.cash;
+            Game.player.totalAssets = ta;
+
+            const up = [...Game.stocks, ...Game.etfs].filter(s => s.changePercent > 0).length;
+            const down = [...Game.stocks, ...Game.etfs].filter(s => s.changePercent < 0).length;
+            setText('upCount', up);
+            setText('downCount', down);
+            const sentiment = document.getElementById('sentimentText');
+            if (sentiment) {
+                sentiment.textContent = Game.marketSentiment > 60 ? '乐观' : Game.marketSentiment < 40 ? '悲观' : '中性';
+                sentiment.className = Game.marketSentiment > 60 ? 'green' : Game.marketSentiment < 40 ? 'red' : '';
+            }
+
+            updateStockList();
+            updatePortfolio();
+            updateLeaderboard();
+            updateDragonList();
+            updateTradeHistoryUI();
+            updateLiabilityUI();
+            updateETFHoldings();
+            updateTicker();
+            updateAssetChart();
+            if (Game.selectedStock) {
+                const updated = [...Game.stocks, ...Game.etfs].find(s => s.code === Game.selectedStock.code);
+                if (updated) { Game.selectedStock = updated; drawChart(updated); }
+            }
+        }
+
+        function updateLiabilityUI() {
+            const container = document.getElementById('liabilityList');
+            if (!container) return;
+            let html = '';
+            if (Game.marginLoan) {
+                html += `<div class="liability-item liability-margin">💳 融资负债: ${Game.marginLoan.amount.toFixed(2)} (利息累计: ${(Game.marginLoan.interestAccrued||0).toFixed(2)})</div>`;
+            }
+            if (Game.shortPositions) {
+                Object.values(Game.shortPositions).forEach(s => {
+                    const st = Game.stocks.find(x => x.code === s.code);
+                    const price = st ? st.price : 0;
+                    html += `<div class="liability-item liability-short">🔻 融券 ${s.code}: ${s.shares}股 @ ${s.costBasis.toFixed(2)} → 现价 ${price.toFixed(2)} (保证金: ${s.marginDeposit.toFixed(0)})</div>`;
+                });
+            }
+            if (!html) html = '<div style="text-align:center;color:#666;padding:10px;">暂无负债</div>';
+            container.innerHTML = html;
+        }
+
+        function updateETFHoldings() {
+            const container = document.getElementById('etfHoldings');
+            if (!container) return;
+            const entries = Object.entries(Game.etfPositions);
+            if (entries.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#666;padding:10px;">暂无ETF持仓</div>';
+                return;
+            }
+            let html = '';
+            entries.forEach(([code, shares]) => {
+                const etf = Game.etfs.find(e => e.code === code);
+                if (!etf) return;
+                const value = shares * etf.price;
+                html += `<div class="trade-item">${etf.name} ${shares}份 <span style="color:#006699;">${value.toFixed(0)}</span></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateStockList() {
+            const search = document.getElementById('stockSearch');
+            const sort = document.getElementById('stockSort');
+            const tbody = document.getElementById('stockList');
+            if (!tbody) return;
+            const searchVal = search ? search.value.trim().toLowerCase() : '';
+            const sortVal = sort ? sort.value : 'code';
+            let allAssets = [...Game.stocks, ...Game.etfs];
+            let filtered = allAssets.filter(s => s.name.toLowerCase().includes(searchVal) || s.code.toLowerCase().includes(searchVal));
+
+            switch (sortVal) {
+                case 'change': filtered.sort((a,b) => b.changePercent - a.changePercent); break;
+                case 'change_asc': filtered.sort((a,b) => a.changePercent - b.changePercent); break;
+                case 'price': filtered.sort((a,b) => b.price - a.price); break;
+                case 'price_asc': filtered.sort((a,b) => a.price - b.price); break;
+                case 'pe': filtered.sort((a,b) => (a.isETF ? 0 : a.pe) - (b.isETF ? 0 : b.pe)); break;
+                case 'pe_asc': filtered.sort((a,b) => (a.isETF ? 999 : a.pe) - (b.isETF ? 999 : b.pe)); break;
+                default: filtered.sort((a,b) => a.code.localeCompare(b.code));
+            }
+
+            const html = filtered.map(st => {
+                const cc = st.changePercent > 0 ? 'green' : st.changePercent < 0 ? 'red' : '';
+                const arr = st.changePercent > 0 ? '↑' : st.changePercent < 0 ? '↓' : '-';
+                let tag = '';
+                if (st.limitUp) tag = '<span class="tag tag-limit-up">涨停</span>';
+                else if (st.limitDown) tag = '<span class="tag tag-limit-down">跌停</span>';
+                if (st.isETF) tag += ' <span class="tag tag-etf">ETF</span>';
+                const hasShort = Game.shortPositions[st.code] && Game.shortPositions[st.code].shares > 0;
+                if (hasShort) tag += ' <span class="tag tag-short">空</span>';
+                if (!st.isETF && st.earningsDate && (Game.day - st.earningsDate) <= 5) {
+                    tag += ' <span class="tag tag-earnings">📊</span>';
+                }
+                let peDisplay = st.isETF ? '-' : (st.pe ? st.pe.toFixed(1) : '-');
+                let actions = '';
+                if (st.isETF) {
+                    actions = `<button class="btn btn-etf" onclick="event.stopPropagation();openEtfModal('${st.code}')">申赎</button>`;
+                } else {
+                    actions = `<button class="btn btn-buy" onclick="event.stopPropagation();openTradeModal('${st.code}','buy')">买</button>
+                               <button class="btn btn-sell" onclick="event.stopPropagation();openTradeModal('${st.code}','sell')">卖</button>`;
+                }
+                return `<tr onclick="selectStock('${st.code}')">
+                    <td>${st.code}</td>
+                    <td>${st.name}${tag}</td>
+                    <td style="text-align:right">${st.price.toFixed(2)}</td>
+                    <td style="text-align:right" class="${cc}">${arr} ${Math.abs(st.changePercent).toFixed(2)}%</td>
+                    <td style="text-align:center">${peDisplay}</td>
+                    <td style="text-align:center">${actions}</td>
+                </tr>`;
+            }).join('');
+            tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:#999;padding:15px;">无匹配</td></tr>';
+        }
+
+        function updatePortfolio() {
+            const tbody = document.getElementById('portfolioList');
+            if (!tbody) return;
+            let rows = [];
+            Object.entries(Game.portfolio).forEach(([c, entry]) => {
+                const st = Game.stocks.find(s => s.code === c);
+                if (!st) return;
+                let shares = 0, cost = 0;
+                entry.batches.forEach(b => { shares += b.shares; cost += b.shares * b.costBasis; });
+                const avgCost = shares > 0 ? cost / shares : 0;
+                const profit = (st.price - avgCost) * shares;
+                const pp = avgCost > 0 ? (profit / (shares * avgCost) * 100) : 0;
+                const pc = profit >= 0 ? 'green' : 'red';
+                const sellable = getSellableShares(c);
+                rows.push(`<tr>
+                    <td>${st.name}</td>
+                    <td style="text-align:right">${shares}</td>
+                    <td style="text-align:right">${sellable}</td>
+                    <td style="text-align:right">${avgCost.toFixed(2)}</td>
+                    <td style="text-align:right" class="${pc}">${profit>=0?'+':''}${profit.toFixed(0)} (${pp>=0?'+':''}${pp.toFixed(1)}%)</td>
+                    <td style="text-align:center"><button class="btn btn-sell" onclick="openTradeModal('${c}','sell')">卖</button></td>
+                </tr>`);
+            });
+            Object.entries(Game.etfPositions).forEach(([code, shares]) => {
+                const etf = Game.etfs.find(e => e.code === code);
+                if (!etf) return;
+                rows.push(`<tr>
+                    <td>${etf.name} (ETF)</td>
+                    <td style="text-align:right">${shares}份</td>
+                    <td style="text-align:right">${shares}</td>
+                    <td style="text-align:right">${etf.nav.toFixed(2)}</td>
+                    <td style="text-align:right" class="green">${((etf.price - etf.nav) * shares).toFixed(0)}</td>
+                    <td style="text-align:center"><button class="btn btn-etf" onclick="openEtfModal('${code}')">申赎</button></td>
+                </tr>`);
+            });
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#666;padding:25px;">暂无持仓</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.join('');
+        }
+
+        function updateLeaderboard() {
+            const container = document.getElementById('leaderboard');
+            if (!container) return;
+            const sorted = [...Game.aiPlayers].sort((a,b) => b.totalAssets - a.totalAssets);
+            const html = sorted.map((p, i) => {
+                const pc = p.isPlayer ? 'rank-player' : '';
+                const rr = ((p.totalAssets - CONFIG.initialCash) / CONFIG.initialCash * 100);
+                return `<div class="rank-item ${pc}"><div><span class="rank-num">${i+1}</span>${p.name}</div><div style="text-align:right"><div>${p.totalAssets.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</div><div style="font-size:11px;${rr>=0?'color:#007000':'color:#c00'}">${rr>=0?'+':''}${rr.toFixed(2)}%</div></div></div>`;
+            }).join('');
+            container.innerHTML = html;
+        }
+
+        function updateDragonList() {
+            const container = document.getElementById('dragonList');
+            if (!container) return;
+            const gain = [...Game.stocks, ...Game.etfs].sort((a,b) => b.changePercent - a.changePercent).slice(0,3);
+            const lose = [...Game.stocks, ...Game.etfs].sort((a,b) => a.changePercent - b.changePercent).slice(0,3);
+            let html = '';
+            gain.forEach(s => html += `<div class="trade-item"><span class="green">↑ ${s.name}</span><span class="green">+${s.changePercent.toFixed(2)}%</span></div>`);
+            lose.forEach(s => html += `<div class="trade-item"><span class="red">↓ ${s.name}</span><span class="red">${s.changePercent.toFixed(2)}%</span></div>`);
+            container.innerHTML = html;
+        }
+
+        function updateTradeHistoryUI() {
+            const container = document.getElementById('tradeHistory');
+            if (!container) return;
+            if (Game.trades.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#666;padding:18px;">暂无</div>';
+                return;
+            }
+            const html = Game.trades.map(t => {
+                const cls = t.type === 'buy' ? 'green' : t.type === 'sell' ? 'red' : 'blue';
+                return `<div class="trade-item"><span class="${cls}">${t.text}</span><span style="color:#666">${t.time}</span></div>`;
+            }).join('');
+            container.innerHTML = html;
+        }
+
+        // ======================================================================
+        // 15. 成就系统
+        // ======================================================================
+        function checkAchievements() {
+            let unlocked = 0;
+            ACHIEVEMENTS.forEach(a => {
+                if (!Game.achievements[a.id] && a.check(Game)) {
+                    Game.achievements[a.id] = true;
+                    showAchievementToast(a.name);
+                }
+                if (Game.achievements[a.id]) unlocked++;
+            });
+            if (document.getElementById('homeModal') && document.getElementById('homeModal').style.display === 'grid') {
+                renderHomeAchievements();
+            }
+        }
+
+        function showAchievementToast(name) {
+            const toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#007000;color:#fff;padding:12px 20px;border-radius:6px;font-weight:bold;z-index:9999;box-shadow:0 2px 10px rgba(0,0,0,0.3);animation: slideIn 0.5s ease;';
+            toast.textContent = '🏅 解锁成就: ' + name;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500); }, 3000);
+        }
+
+        // ======================================================================
+        // 16. 主页 & 存档
+        // ======================================================================
+        function openHomeModal() {
+            const modal = document.getElementById('homeModal');
+            if (!modal) return;
+            modal.style.display = 'grid';
+            const ta = getTotalAssets(Game);
+            const pr = getProfitRate(Game);
+            const liability = getTotalLiability(Game);
+            const ratio = getMarginRatio(Game);
+            setText('homeTotalAssets', ta.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+            const prEl = document.getElementById('homeProfitRate');
+            if (prEl) {
+                prEl.textContent = (pr >= 0 ? '+' : '') + pr.toFixed(2) + '%';
+                prEl.className = pr >= 0 ? 'green' : 'red';
+            }
+            setText('homeTradeCount', Game.tradeCount);
+            setText('homeStockCount', Object.keys(Game.portfolio).length + Object.keys(Game.etfPositions).length);
+            setText('homeGameDay', Game.day);
+            setText('homeLiability', liability.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+            const ratioHome = document.getElementById('homeMarginRatio');
+            if (ratioHome) {
+                ratioHome.textContent = liability === 0 ? '--%' : (ratio * 100).toFixed(1) + '%';
+                ratioHome.className = liability === 0 ? '' : (ratio >= CONFIG.maintenanceMargin ? 'green' : 'red');
+            }
+
+            renderHomeAchievements();
+
+            const container = document.getElementById('homeReturnChart');
+            if (!container) return;
+            const data = Game.assetHistory.map(v => ((v - CONFIG.initialCash) / CONFIG.initialCash) * 100);
+            const color = data.length >= 2 && data[data.length - 1] >= data[0] ? '#007000' : '#c00';
+            drawLineChart(container, data, color);
+        }
+
+        function renderHomeAchievements() {
+            const container = document.getElementById('achievementList');
+            if (!container) return;
+            let unlockedCount = 0;
+            let html = '';
+            ACHIEVEMENTS.forEach(a => {
+                const unlocked = Game.achievements[a.id] || false;
+                if (unlocked) unlockedCount++;
+                html += `<div class="achievement-item ${unlocked ? 'unlocked' : 'locked'}">
+                    <div><span class="achievement-badge">${unlocked ? '✅' : '🔒'}</span>
+                    <span class="achievement-name">${a.name}</span>
+                    <span class="achievement-desc">${a.desc}</span></div>
+                    <div>${unlocked ? '已解锁' : '未解锁'}</div>
+                </div>`;
+            });
+            container.innerHTML = html;
+            setText('achieveCount', unlockedCount);
+            setText('achieveTotal', ACHIEVEMENTS.length);
+        }
+
+        function closeHomeModal() { const modal = document.getElementById('homeModal'); if (modal) modal.style.display = 'none'; }
+
+        // === 存档 ===
+        function openSaveModal() { document.getElementById('saveModal').style.display = 'grid'; renderSaveList(); }
+        function closeSaveModal() { document.getElementById('saveModal').style.display = 'none'; }
+        function renderSaveList() {
+            const container = document.getElementById('saveList');
+            if (!container) return;
+            const keys = Object.keys(localStorage).filter(k => k.startsWith('stock_save_'));
+            if (keys.length === 0) { container.innerHTML = '<div style="color:#999;padding:10px;">暂无存档</div>'; return; }
+            let html = '';
+            keys.forEach(key => {
+                const data = JSON.parse(localStorage.getItem(key));
+                const name = key.replace('stock_save_', '');
+                const date = data.saveDate ? new Date(data.saveDate).toLocaleString() : '未知';
+                const day = data.day || 1;
+                let assets = data.cash;
+                if (data.portfolio) {
+                    Object.values(data.portfolio).forEach(entry => {
+                        if (entry.batches) {
+                            entry.batches.forEach(b => {
+                                const st = data.stocks ? data.stocks.find(s => s.code === b.code) : null;
+                                assets += b.shares * (st ? st.price : b.costBasis);
+                            });
+                        }
+                    });
+                }
+                if (data.etfPositions) {
+                    Object.entries(data.etfPositions).forEach(([code, shares]) => {
+                        const etf = data.etfs ? data.etfs.find(e => e.code === code) : null;
+                        if (etf) assets += shares * etf.price;
+                    });
+                }
+                html += `<div class="save-item"><div class="save-info"><strong>${name}</strong> | 第${day}天 | 总资产: ${assets.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}<br><span style="font-size:10px;color:#999;">${date}</span></div><div class="save-actions"><button class="btn btn-primary" onclick="loadSave('${key}')">读取</button><button class="btn btn-warning" onclick="exportSave('${key}')">📤 导出</button><button class="btn btn-danger" onclick="deleteSave('${key}')">删除</button></div></div>`;
+            });
+            container.innerHTML = html;
+        }
+        function saveGame() {
+            const nameInput = document.getElementById('saveNameInput');
+            if (!nameInput) return;
+            const name = nameInput.value.trim() || '存档';
+            const key = 'stock_save_' + name;
+            const saveData = {
+                cash: Game.cash, portfolio: Game.portfolio, etfPositions: Game.etfPositions,
+                stocks: Game.stocks, etfs: Game.etfs,
+                aiPlayers: Game.aiPlayers.map(ai => ({ ...ai, portfolio: { ...ai.portfolio }, etfPositions: { ...ai.etfPositions } })),
+                news: Game.news, trades: Game.trades,
+                tradeCount: Game.tradeCount, shortCount: Game.shortCount,
+                marginTradeCount: Game.marginTradeCount, etfCreateCount: Game.etfCreateCount,
+                etfRedeemCount: Game.etfRedeemCount, forceCloseCount: Game.forceCloseCount,
+                totalInterestPaid: Game.totalInterestPaid,
+                day: Game.day, marketSentiment: Game.marketSentiment,
+                eventCount: Game.eventCount, assetHistory: Game.assetHistory,
+                achievements: Game.achievements,
+                marginLoan: Game.marginLoan, shortPositions: Game.shortPositions,
+                saveDate: Date.now()
+            };
+            localStorage.setItem(key, JSON.stringify(saveData));
+            alert('✅ 存档 "' + name + '" 保存成功！');
+            renderSaveList();
+        }
+        function loadSave(key) {
+            if (!confirm('确定要读取存档吗？当前进度将被覆盖。')) return;
+            const data = JSON.parse(localStorage.getItem(key));
+            if (!data) { alert('存档损坏'); return; }
+            // 应用存档
+            Game.cash = data.cash;
+            Game.portfolio = data.portfolio || {};
+            Game.etfPositions = data.etfPositions || {};
+            Game.stocks = data.stocks || generateStocks();
+            Game.etfs = data.etfs || generateETFs(Game.stocks);
+            Game.aiPlayers = data.aiPlayers || AI_PLAYERS.map((ai, i) => ({ ...ai, cash: data.cash, portfolio: {}, totalAssets: data.cash, etfPositions: {} }));
+            if (!Game.aiPlayers.find(p => p.isPlayer)) {
+                Game.aiPlayers.push({ id: 999, name: '你', isPlayer: true, cash: data.cash, portfolio: data.portfolio || {}, totalAssets: data.cash, etfPositions: data.etfPositions || {} });
+            }
+            Game.news = data.news || [];
+            Game.trades = data.trades || [];
+            Game.tradeCount = data.tradeCount || 0;
+            Game.shortCount = data.shortCount || 0;
+            Game.marginTradeCount = data.marginTradeCount || 0;
+            Game.etfCreateCount = data.etfCreateCount || 0;
+            Game.etfRedeemCount = data.etfRedeemCount || 0;
+            Game.forceCloseCount = data.forceCloseCount || 0;
+            Game.totalInterestPaid = data.totalInterestPaid || 0;
+            Game.day = data.day || 1;
+            Game.marketSentiment = data.marketSentiment || 50;
+            Game.eventCount = data.eventCount || 0;
+            Game.assetHistory = data.assetHistory || [data.cash];
+            Game.achievements = data.achievements || {};
+            Game.marginLoan = data.marginLoan || null;
+            Game.shortPositions = data.shortPositions || {};
+            CONFIG.initialCash = data.cash;
+
+            Game.aiPlayers.forEach(ai => {
+                if (!ai.isPlayer) {
+                    let pv = 0;
+                    Object.entries(ai.portfolio || {}).forEach(([c, entry]) => {
+                        if (entry.batches) {
+                            const totalShares = entry.batches.reduce((s,b) => s + b.shares, 0);
+                            const st = Game.stocks.find(x => x.code === c);
+                            if (st) pv += totalShares * st.price;
+                        }
+                    });
+                    Object.entries(ai.etfPositions || {}).forEach(([code, shares]) => {
+                        const etf = Game.etfs.find(e => e.code === code);
+                        if (etf) pv += shares * etf.price;
+                    });
+                    ai.totalAssets = ai.cash + pv;
+                } else {
+                    let pv = 0;
+                    Object.entries(Game.portfolio).forEach(([c, entry]) => {
+                        if (entry.batches) {
+                            const totalShares = entry.batches.reduce((s,b) => s + b.shares, 0);
+                            const st = Game.stocks.find(x => x.code === c);
+                            if (st) pv += totalShares * st.price;
+                        }
+                    });
+                    Object.entries(Game.etfPositions).forEach(([code, shares]) => {
+                        const etf = Game.etfs.find(e => e.code === code);
+                        if (etf) pv += shares * etf.price;
+                    });
+                    ai.totalAssets = Game.cash + pv;
+                }
+            });
+
+            startGameLoop();
+            updateAll();
+            closeSaveModal();
+            alert('✅ 存档已读取！');
+        }
+        function deleteSave(key) { if (confirm('确定删除此存档吗？')) { localStorage.removeItem(key); renderSaveList(); } }
+        function exportSave(key) { const data = localStorage.getItem(key); if (!data) { alert('存档不存在'); return; } const name = key.replace('stock_save_', ''); downloadFile(data, `${name}.json`, 'application/json'); }
+        function exportAllSaves() { const keys = Object.keys(localStorage).filter(k => k.startsWith('stock_save_')); if (keys.length === 0) { alert('没有存档可导出'); return; } const all = {}; keys.forEach(k => { all[k] = JSON.parse(localStorage.getItem(k)); }); const json = JSON.stringify(all, null, 2); downloadFile(json, 'all_saves.json', 'application/json'); }
+        function importSave(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); const keys = Object.keys(data).filter(k => k.startsWith('stock_save_')); if (keys.length > 0) { let count = 0; keys.forEach(k => { localStorage.setItem(k, JSON.stringify(data[k])); count++; }); alert(`✅ 成功导入 ${count} 个存档！`); } else if (data.cash !== undefined && data.stocks) { const name = prompt('请输入此存档的名称：', '导入存档'); if (name) { const key = 'stock_save_' + name; localStorage.setItem(key, JSON.stringify(data)); alert('✅ 存档 "' + name + '" 导入成功！'); } } else { alert('❌ 无效的存档文件'); } renderSaveList(); } catch (err) { alert('❌ 解析文件失败: ' + err.message); } event.target.value = ''; }; reader.readAsText(file); }
+        function downloadFile(content, filename, mimeType) { const blob = new Blob([content], { type: mimeType }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+
+        // ======================================================================
+        // 17. 游戏启动 & 循环控制
+        // ======================================================================
+        function initGame(initialCash) {
+            try {
+                CONFIG.initialCash = initialCash;
+                Game.cash = initialCash;
+                Game.portfolio = {};
+                Game.etfPositions = {};
+                Game.news = [];
+                Game.trades = [];
+                Game.tradeCount = 0;
+                Game.shortCount = 0;
+                Game.marginTradeCount = 0;
+                Game.etfCreateCount = 0;
+                Game.etfRedeemCount = 0;
+                Game.forceCloseCount = 0;
+                Game.totalInterestPaid = 0;
+                Game.eventCount = 0;
+                Game.day = 1;
+                Game.marketSentiment = 50;
+                Game.assetHistory = [initialCash];
+                Game.achievements = {};
+                Game.marginLoan = null;
+                Game.shortPositions = {};
+                Game.earningsHistory = [];
+                Game.nextEarningsDay = CONFIG.earningsInterval;
+
+                Game.stocks = generateStocks();
+                Game.etfs = generateETFs(Game.stocks);
+
+                Game.aiPlayers = AI_PLAYERS.map((ai, i) => ({
+                    id: i, ...ai,
+                    cash: initialCash, portfolio: {}, totalAssets: initialCash,
+                    shortPositions: {}, marginLoan: null, etfPositions: {},
+                }));
+                Game.player = {
+                    id: 999, name: '你', isPlayer: true,
+                    cash: initialCash, portfolio: {}, totalAssets: initialCash,
+                    shortPositions: {}, marginLoan: null, etfPositions: {},
+                };
+                Game.aiPlayers.push(Game.player);
+
+                addNews({ type: 'neutral', title: '📊 开盘', content: '股市开盘交易（支持财报系统）' });
+
+                updateAll();
+                updateTicker();
+                startGameLoop();
+                const startModal = document.getElementById('startModal');
+                if (startModal) startModal.style.display = 'none';
+                checkAchievements();
+            } catch (e) {
+                console.error('初始化游戏出错:', e);
+                setText('startError', '❌ 初始化失败: ' + e.message);
+            }
+        }
+
+        function startGame() {
+            try {
+                const input = document.getElementById('startCashInput');
+                if (!input) { alert('启动输入框缺失'); return; }
+                const raw = input.value.replace(/,/g, '');
+                let val = parseInt(raw);
+                if (isNaN(val) || val < 100000) { setText('startError', '⚠️ 金额不能低于 100,000 元'); return; }
+                if (val > 100000000) { setText('startError', '⚠️ 金额不能超过 100,000,000 元'); return; }
+                setText('startError', '');
+                input.value = val.toLocaleString();
+                initGame(val);
+            } catch (e) {
+                setText('startError', '❌ 启动失败: ' + e.message);
+                console.error(e);
+            }
+        }
+
+        function formatStartCash(el) {
+            let raw = el.value.replace(/,/g, '');
+            let num = parseInt(raw);
+            if (!isNaN(num) && num >= 0) el.value = num.toLocaleString();
+        }
+
+        function startGameLoop() {
+            clearInterval(Game.gameLoop);
+            clearInterval(Game.newsLoop);
+            clearInterval(Game.earningsLoop);
+            Game.gameLoop = setInterval(() => { if (!Game.paused) gameTick(); }, CONFIG.tickInterval / Game.speed);
+            Game.newsLoop = setInterval(() => { if (!Game.paused && Math.random() < 0.75) generateNews(); }, CONFIG.newsInterval / Game.speed);
+            Game.earningsLoop = setInterval(() => {
+                if (!Game.paused && Game.day >= Game.nextEarningsDay) {
+                    generateEarningsReport();
+                    Game.nextEarningsDay += CONFIG.earningsInterval;
+                }
+            }, CONFIG.tickInterval * 10 / Game.speed);
+        }
+
+        function setSpeed(speed) {
+            document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+            const btns = document.querySelectorAll('.speed-btn');
+            let target = null;
+            btns.forEach(b => { if (b.textContent === (speed === 0 ? '暂停' : (speed + 'x'))) target = b; });
+            if (target) target.classList.add('active');
+            if (speed === 0) { Game.paused = true; } else { Game.paused = false; Game.speed = speed; startGameLoop(); }
+        }
+
+        // ======================================================================
+        // 18. 初始化：确保启动模态框显示
+        // ======================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // 确保启动模态框可见
+            const startModal = document.getElementById('startModal');
+            if (startModal) startModal.style.display = 'grid';
+
+            const presetBtns = document.querySelectorAll('.preset-btn');
+            const cashInput = document.getElementById('startCashInput');
+            if (!cashInput) return;
+            presetBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    presetBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const val = parseInt(this.dataset.val);
+                    cashInput.value = val.toLocaleString();
+                    setText('startError', '');
+                });
+            });
+            cashInput.addEventListener('input', function() {
+                presetBtns.forEach(b => b.classList.remove('active'));
+                setText('startError', '');
+            });
+            cashInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') startGame(); });
+        });
+
+        // 点击模态框外部关闭
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+        });
+
+        console.log('📈 股市交易模拟器 - 完整版（含财报系统，已修复启动）');
+    </script>
+</body>
+</html>
